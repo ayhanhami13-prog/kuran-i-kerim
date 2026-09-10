@@ -1077,15 +1077,15 @@ body.gece-modu .favori-satir{background:#303630}
    AYARLAR
    ========================================================= */
 
-let SURE = 6;
+let SURE = 1;
 
 const MIN_SAYFA = 1;
 const MAX_SAYFA = 604;
 const TOPLAM_MUSHAF_SAYFASI = 604;
 
 let SAYFA = 1;
-let ILK_AYET = 95;
-let SON_AYET = 110;
+let ILK_AYET = 1;
+let SON_AYET = 7;
 
 /*
    Okuyucu sistemi
@@ -1332,8 +1332,11 @@ function geceModunuUygula(){
 }
 
 function varsayilanSayfayiYukle(){
-    const kayit=Number(localStorage.getItem("kuranSonSayfa"));
-    if(kayit>=MIN_SAYFA && kayit<=MAX_SAYFA) SAYFA=kayit;
+    // Site ilk açıldığında her zaman Kur'an'ın ilk sayfası açılır.
+    // Böylece eski localStorage kaydı başlangıç sûresini değiştiremez.
+    SAYFA = 1;
+    SURE = 1;
+    sayfaDegisti = true;
 }
 
 
@@ -1386,18 +1389,33 @@ let sayfaDegisti = true;
 
 function sureBilgisiniSayfadanBelirle(verses){
     const ilk = (verses || [])[0];
-    const chapterId = Number(ilk?.chapter_id);
 
-    if(Number.isFinite(chapterId)){
-        const bilgi = SURELER.find(x => x[0] === chapterId);
+    // En güvenilir kaynak verse_key'dir: "1:1", "2:1" gibi.
+    const key = String(ilk?.verse_key || "");
+    const keyChapter = Number(key.split(":")[0]);
+
+    // verse_key geçerliyse onu kullan.
+    if(Number.isFinite(keyChapter) && keyChapter >= 1 && keyChapter <= 114){
+        const bilgi = SURELER.find(x => x[0] === keyChapter);
         if(bilgi){
-            SURE = chapterId;
-            sureSec.value = String(chapterId);
+            SURE = keyChapter;
+            if(sureSec) sureSec.value = String(keyChapter);
             return bilgi;
         }
     }
 
-    return SURELER.find(x => x[0] === SURE) || null;
+    // API chapter_id yedek kaynak olarak kullanılır.
+    const chapterId = Number(ilk?.chapter_id);
+    if(Number.isFinite(chapterId)){
+        const bilgi = SURELER.find(x => x[0] === chapterId);
+        if(bilgi){
+            SURE = chapterId;
+            if(sureSec) sureSec.value = String(chapterId);
+            return bilgi;
+        }
+    }
+
+    return SURELER.find(x => x[0] === SURE) || SURELER[0];
 }
 
 function sayfaAraliginiAyarla(verses){
@@ -1428,7 +1446,7 @@ async function okuyuculariYukle(){
 
         /*
          * MP3Quran API:
-         * En'âm suresine sahip Hafs okuyuşları.
+         * Seçili sûreye uygun Hafs okuyuşları.
          */
         const reciterUrl =
         "https://mp3quran.net/api/v3/reciters" +
@@ -1475,7 +1493,7 @@ async function okuyuculariYukle(){
 
                 /*
                  * Ayet vurgulaması için zamanlaması bulunan
-                 * ve En'âm suresini içeren okuyuşları göster.
+                 * ve seçili sûreyi içeren okuyuşları göster.
                  */
                 if(
                     !zamanliIdler.has(readId) ||
@@ -1895,7 +1913,7 @@ async function mushafYukle(){
         "?words=true" +
         "&translations=" + SECILI_MEAL +
         "&word_fields=text_uthmani,page_number,line_number,location,verse_key" +
-        "&fields=text_uthmani,page_number,verse_number,verse_key" +
+        "&fields=text_uthmani,page_number,verse_number,verse_key,chapter_id" +
         "&per_page=50";
 
 
@@ -3014,6 +3032,8 @@ sonraki.addEventListener("click", async ()=>{
 
 varsayilanSayfayiYukle();
 sureSeciminiDoldur();
+sureSec.value = "1";
+SURE = 1;
 geceModunuUygula();
 favorileriGoster();
 
