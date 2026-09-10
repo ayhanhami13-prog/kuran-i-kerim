@@ -1,0 +1,3029 @@
+<!DOCTYPE html>
+<html lang="tr" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kur'an-ı Kerim</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    background:#e9e3d5;
+    font-family:Arial,sans-serif;
+}
+
+.ust{
+    height:60px;
+    background:#173b2d;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 20px;
+}
+
+.ust h1{
+    margin:0;
+    font-size:20px;
+}
+
+#sayfaNo{
+    color:#6ee28a;
+    font-size:26px;
+    font-weight:700;
+    line-height:1;
+}
+
+.kontroller{
+    background:#fff;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    padding:10px;
+    position:sticky;
+    top:0;
+    z-index:1000;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+    width:100%;
+    max-width:100%;
+    overflow:visible;
+}
+
+.kontroller > button,
+.kontroller > .sure-kontrol,
+.kontroller > .okuyucu-kontrol,
+.kontroller > .ek-kontrol-alani,
+.kontroller > .ezber-toggle{
+    flex:0 0 auto;
+    max-width:100%;
+}
+
+.kontroller > .durum{
+    flex:1 1 100%;
+    width:100%;
+    min-width:0;
+    order:20;
+}
+
+button{
+    border:1px solid rgba(23,59,45,.12);
+    border-radius:12px;
+    padding:11px 17px;
+    background:linear-gradient(135deg,#174b37,#24664c);
+    color:#fff;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.1px;
+    box-shadow:0 3px 9px rgba(23,59,45,.18);
+    transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+}
+
+button:hover{
+    background:linear-gradient(135deg,#24664c,#2f795b);
+    transform:translateY(-1px);
+    box-shadow:0 5px 13px rgba(23,59,45,.24);
+}
+
+button:active{
+    transform:translateY(0);
+    box-shadow:0 2px 6px rgba(23,59,45,.18);
+}
+
+#oynat{
+    background:linear-gradient(135deg,#197447,#2b9a61);
+}
+
+#oynat:hover{
+    background:linear-gradient(135deg,#208652,#36aa6d);
+}
+
+#duraklat{
+    background:linear-gradient(135deg,#8a6a22,#b28a32);
+}
+
+#duraklat:hover{
+    background:linear-gradient(135deg,#a27b28,#c29a42);
+}
+
+#durdur{
+    background:linear-gradient(135deg,#8b3939,#b94d4d);
+}
+
+#durdur:hover{
+    background:linear-gradient(135deg,#a34141,#c65a5a);
+}
+
+#onceki,#sonraki{
+    background:linear-gradient(135deg,#315c75,#447b99);
+}
+
+#onceki:hover,#sonraki:hover{
+    background:linear-gradient(135deg,#3b6e8b,#5289a7);
+}
+
+/* Sure seçim alanı */
+.sure-kontrol{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px 6px 8px;
+    background:linear-gradient(135deg,#fff8e8 0%,#f5ead0 100%);
+    border:2px solid #b98c31;
+    border-radius:18px;
+    box-shadow:0 5px 14px rgba(185,140,49,.16);
+    position:relative;
+    flex-shrink:0;
+}
+.sure-etiket{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:38px;
+    padding:0 13px;
+    border-radius:12px;
+    color:#fff;
+    background:linear-gradient(135deg,#b98c31,#8f651d);
+    border:1px solid #7b5514;
+    font-size:14px;
+    font-weight:900;
+    white-space:nowrap;
+    box-shadow:0 2px 5px rgba(0,0,0,.12);
+}
+#sureSec{
+    appearance:none;
+    -webkit-appearance:none;
+    border:0;
+    background:transparent;
+    color:#5d4619;
+    min-height:42px;
+    min-width:190px;
+    padding:8px 34px 8px 6px;
+    font-size:14px;
+    font-weight:900;
+    cursor:pointer;
+    outline:none;
+}
+.sure-kontrol:after{
+    content:"▾";
+    position:absolute;
+    right:14px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#8f651d;
+    pointer-events:none;
+    font-size:15px;
+}
+.sure-kontrol:focus-within{
+    border-color:#8f651d;
+    box-shadow:0 0 0 3px rgba(185,140,49,.18),0 6px 18px rgba(185,140,49,.16);
+}
+body.gece-modu .sure-kontrol{
+    background:linear-gradient(135deg,#3a3324,#2c281f);
+    border-color:#8f7335;
+}
+body.gece-modu #sureSec{color:#f1e8cf}
+
+.okuyucu-kontrol{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:#173b2d;
+    font-weight:700;
+    padding:4px 5px 4px 10px;
+    background:#eef5f0;
+    border:1px solid #cbdcd1;
+    border-radius:13px;
+}
+
+#okuyucuSec{
+    appearance:none;
+    -webkit-appearance:none;
+    border:1px solid #7fa28f;
+    border-radius:10px;
+    padding:10px 38px 10px 13px;
+    background:#fff;
+    color:#173b2d;
+    font-size:14px;
+    font-weight:600;
+    min-width:220px;
+    max-width:min(420px,70vw);
+    cursor:pointer;
+    outline:none;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.05);
+}
+
+#okuyucuSec:hover{
+    border-color:#39785a;
+    background:#f8fbf9;
+}
+
+#okuyucuSec:focus{
+    border-color:#24664c;
+    box-shadow:0 0 0 3px rgba(36,102,76,.14);
+}
+
+.okuyucu-kontrol{
+    position:relative;
+}
+
+/* Dil ve Meal seçim kutuları - daha kalın ve canlı tasarım */
+.meal-kontrol{
+    display:flex;
+    align-items:center;
+    background:linear-gradient(135deg,#ffffff 0%,#eef7f1 100%);
+    border:2px solid #2f7657;
+    border-radius:18px;
+    padding:6px 12px 6px 7px;
+    gap:10px;
+    box-shadow:0 5px 14px rgba(36,102,76,.16), inset 0 1px 0 rgba(255,255,255,.95);
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.meal-kontrol:hover{
+    transform:translateY(-2px);
+    border-color:#1f6044;
+    box-shadow:0 8px 20px rgba(36,102,76,.22), inset 0 1px 0 rgba(255,255,255,1);
+}
+.secim-etiket{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:38px;
+    padding:0 13px;
+    border-radius:12px;
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:.2px;
+    white-space:nowrap;
+    box-shadow:0 2px 5px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.6);
+}
+.dil-etiket{
+    color:#fff;
+    background:linear-gradient(135deg,#3478d1,#245aa8);
+    border:1px solid #1e4f94;
+}
+.meal-etiket{
+    color:#fff;
+    background:linear-gradient(135deg,#d39a25,#a96d0e);
+    border:1px solid #8f5c09;
+}
+#dilSec{
+    min-width:145px;
+    max-width:260px;
+}
+#mealSec{
+    min-width:250px;
+    max-width:min(430px,42vw);
+}
+#dilSec,#mealSec{
+    border:0;
+    background:transparent;
+    box-shadow:none;
+    padding:8px 32px 8px 6px;
+    min-height:42px;
+    font-size:14px;
+    font-weight:900;
+    color:#203b30;
+    cursor:pointer;
+}
+#dilSec:hover,#mealSec:hover{
+    background:rgba(255,255,255,.72);
+    border-radius:11px;
+}
+#dilSec:focus,#mealSec:focus{
+    outline:none;
+    border-radius:11px;
+}
+.dil-kontrol:focus-within{
+    border-color:#3478d1;
+    box-shadow:0 0 0 3px rgba(52,120,209,.18), 0 6px 18px rgba(52,120,209,.16);
+}
+.meal-secim-kontrol:focus-within{
+    border-color:#d39a25;
+    box-shadow:0 0 0 3px rgba(211,154,37,.20), 0 6px 18px rgba(211,154,37,.16);
+}
+.dil-kontrol:after{
+    color:#245aa8;
+}
+.meal-secim-kontrol:after{
+    color:#a96d0e;
+}
+.okuyucu-kontrol:after{
+    content:"▾";
+    position:absolute;
+    right:16px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#24664c;
+    pointer-events:none;
+    font-size:15px;
+}
+
+.durum{
+    min-width:280px;
+    text-align:center;
+    font-size:13px;
+}
+
+.mushaf-alani{
+    padding:20px;
+    display:flex;
+    justify-content:center;
+}
+
+.sayfalar{
+    width:min(1840px,100%);
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:24px;
+    align-items:start;
+}
+
+.sayfa{
+    width:100%;
+    min-height:1200px;
+    background:#fff;
+    box-shadow:0 4px 20px rgba(0,0,0,.2);
+    padding:55px 60px 80px;
+}
+
+.meal-baslik{
+    text-align:center;
+    font-family:Arial,sans-serif;
+    font-size:24px;
+    font-weight:700;
+    color:#173b2d;
+    margin-bottom:8px;
+}
+
+.meal-kaynak{
+    text-align:center;
+    font-size:14px;
+    color:#777;
+    margin-bottom:28px;
+}
+
+.meal-ayet{
+    direction:ltr;
+    text-align:left;
+    font-family:Arial,sans-serif;
+    font-size:19px;
+    line-height:1.75;
+    padding:14px 16px;
+    margin:0 0 10px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .08s,box-shadow .08s;
+}
+
+.meal-ayet:hover{
+    background:#f2f6f3;
+}
+
+.meal-ayet.okunuyor{
+    background:#ffe16a;
+    box-shadow:0 0 0 2px rgba(220,170,30,.35);
+}
+
+.meal-ayet-no{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:34px;
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:linear-gradient(135deg,#2f8f5b,#176b3f);
+    border:2px solid #145c37;
+    color:#fff;
+    font-size:14px;
+    font-weight:900;
+    margin-right:10px;
+    vertical-align:middle;
+    box-shadow:0 2px 6px rgba(23,107,63,.28);
+    flex-shrink:0;
+
+}
+
+/* Meal ayet numaraları: sadece yeşil */
+.meal-ayet.okunuyor .meal-ayet-no{
+    transform:scale(1.05);
+    box-shadow:0 0 0 3px rgba(220,170,30,.28),0 3px 8px rgba(0,0,0,.2);
+}
+
+@media(max-width:1100px){
+    .sayfalar{
+        grid-template-columns:1fr;
+    }
+}
+
+.baslik{
+    text-align:center;
+    font-family:"Times New Roman",serif;
+    font-size:30px;
+    margin-bottom:12px;
+}
+
+.sayfaBilgi{
+    text-align:center;
+    font-family:"Times New Roman",serif;
+    font-size:17px;
+    color:#444;
+    margin-bottom:35px;
+}
+
+.satir{
+    direction:rtl;
+    text-align:center;
+    font-family:"UthmanicHafs","Times New Roman",serif;
+    font-size:31px;
+    line-height:2.2;
+    min-height:65px;
+}
+
+.ayet{
+    display:inline;
+    border-radius:6px;
+    transition:background .08s,box-shadow .08s;
+    cursor:pointer;
+}
+
+.ayet.okunuyor{
+    background:#ffe16a;
+    box-shadow:0 0 0 2px rgba(220,170,30,.35);
+}
+
+.kelime{
+    display:inline;
+}
+
+.ayet-no{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:34px;
+    height:34px;
+    min-width:34px;
+    border:2px solid #2f8f5b;
+    border-radius:50%;
+    background:linear-gradient(135deg,#eef8f1,#d7eddf);
+    color:#176b3f;
+    font-size:14px;
+    font-weight:900;
+    margin:0 6px;
+    vertical-align:middle;
+    box-shadow:0 2px 6px rgba(23,107,63,.20);
+
+}
+
+
+/* =========================================================
+   YENİ KULLANICI ÖZELLİKLERİ
+   ========================================================= */
+
+.ek-kontrol-alani{
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+
+#sayfayaGit, #favorilerBtn, #geceModuBtn{
+    padding:10px 13px;
+    font-weight:800;
+}
+
+#sayfayaGit{
+    background:linear-gradient(135deg,#6b4ca5,#8b68c8);
+}
+#sayfayaGit:hover{background:linear-gradient(135deg,#7b5bb5,#9a78d5)}
+
+#favorilerBtn{
+    background:linear-gradient(135deg,#a44d62,#d06b80);
+}
+#favorilerBtn:hover{background:linear-gradient(135deg,#b85b70,#dc7890)}
+
+#geceModuBtn{
+    background:linear-gradient(135deg,#26384d,#405a75);
+}
+#geceModuBtn:hover{background:linear-gradient(135deg,#314961,#4d6b89)}
+
+.ayet-favori{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:25px;
+    height:25px;
+    margin:0 4px;
+    border:1px solid #c5aa55;
+    border-radius:50%;
+    background:#fffaf0;
+    color:#a67c16;
+    font-size:14px;
+    cursor:pointer;
+    vertical-align:middle;
+    transition:.15s ease;
+}
+.ayet-favori:hover{transform:scale(1.08);background:#fff2c7}
+.ayet-favori.aktif{background:#f3c64f;color:#fff;border-color:#d0a32f}
+
+.favoriler-panel{
+    display:none;
+    position:fixed;
+    top:72px;
+    right:18px;
+    width:min(420px,calc(100vw - 30px));
+    max-height:70vh;
+    overflow:auto;
+    z-index:2000;
+    background:#fff;
+    border:2px solid #b98c31;
+    border-radius:16px;
+    box-shadow:0 12px 35px rgba(0,0,0,.25);
+    padding:16px;
+}
+.favoriler-panel.acik{display:block}
+.favoriler-panel h3{margin:0 0 12px;color:#173b2d}
+.favori-satir{padding:10px;border-radius:10px;margin-bottom:8px;background:#f8f4e8;cursor:pointer}
+.favori-satir:hover{background:#eee5ce}
+.favori-satir strong{color:#806d3b;margin-right:7px}
+
+.sayfa-git-panel{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    z-index:3000;
+    align-items:center;
+    justify-content:center;
+}
+.sayfa-git-panel.acik{display:flex}
+.sayfa-git-kutu{
+    width:min(360px,calc(100vw - 30px));
+    background:#fff;
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 15px 40px rgba(0,0,0,.3);
+    text-align:center;
+}
+.sayfa-git-kutu h3{margin:0 0 15px;color:#173b2d}
+#sayfaInput{width:100%;padding:12px;border:2px solid #7b5bb5;border-radius:10px;font-size:17px;text-align:center;outline:none}
+.sayfa-git-butonlar{display:flex;gap:8px;margin-top:12px}
+.sayfa-git-butonlar button{flex:1}
+#sayfaGitTamam{background:linear-gradient(135deg,#197447,#2b9a61)}
+#sayfaGitIptal{background:linear-gradient(135deg,#777,#999)}
+
+.mobil-kontrol-bar{display:none}
+
+body.gece-modu{background:#151a19;color:#e8e5dc}
+body.gece-modu .kontroller{background:#202725;color:#eee}
+body.gece-modu .okuyucu-kontrol{background:#28322e;border-color:#43534b;color:#e8eee9}
+body.gece-modu .meal-kontrol{background:linear-gradient(135deg,#26322d,#202824)}
+body.gece-modu #dilSec,body.gece-modu #mealSec,body.gece-modu #okuyucuSec{color:#edf2ee}
+body.gece-modu .sayfa{background:#242724;color:#eee;box-shadow:0 4px 25px rgba(0,0,0,.5)}
+body.gece-modu .sayfaBilgi{color:#c9c9c1}
+body.gece-modu .meal-kaynak{color:#bbb}
+body.gece-modu .meal-ayet:hover{background:#303530}
+body.gece-modu .favoriler-panel,body.gece-modu .sayfa-git-kutu{background:#242a27;color:#eee}
+body.gece-modu .favoriler-panel h3,body.gece-modu .sayfa-git-kutu h3{color:#dce9df}
+body.gece-modu .favori-satir{background:#303630}
+
+@media(max-width:700px){
+    .mobil-kontrol-bar{
+        position:fixed;
+        left:0;right:0;bottom:0;
+        z-index:2500;
+        display:flex;
+        justify-content:center;
+        gap:7px;
+        padding:9px 8px calc(9px + env(safe-area-inset-bottom));
+        background:rgba(23,59,45,.97);
+        box-shadow:0 -4px 16px rgba(0,0,0,.22);
+    }
+    .mobil-kontrol-bar button{padding:10px 13px;font-size:13px}
+    .mobil-kontrol-bar .mobil-oynat{background:linear-gradient(135deg,#197447,#2b9a61)}
+    .mobil-kontrol-bar .mobil-onceki,.mobil-kontrol-bar .mobil-sonraki{background:linear-gradient(135deg,#315c75,#447b99)}
+    body{padding-bottom:64px}
+    .ek-kontrol-alani{width:100%;justify-content:center;flex-wrap:wrap}
+    #sayfayaGit,#favorilerBtn,#geceModuBtn{flex:1;min-width:105px}
+    .favoriler-panel{top:65px;right:10px}
+}
+
+@font-face{
+    font-family:"UthmanicHafs";
+    src:url("https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2")
+    format("woff2");
+}
+
+@media(max-width:700px){
+
+    .ust{
+        height:52px;
+        padding:0 12px;
+    }
+
+    .ust h1{
+        font-size:16px;
+    }
+
+    .kontroller{
+        flex-wrap:wrap;
+    }
+
+    .okuyucu-kontrol:not(.kompakt-secim){
+        width:100%;
+        justify-content:center;
+    }
+
+    #okuyucuSec{
+        min-width:0;
+        width:min(100%,420px);
+        max-width:100%;
+    }
+
+    .mushaf-alani{
+        padding:7px;
+    }
+
+    .sayfa{
+        padding:40px 18px 70px;
+    }
+
+    .satir{
+        font-size:23px;
+        line-height:2.25;
+    }
+
+    .meal-ayet{
+        font-size:17px;
+        line-height:1.7;
+    }
+    #dilSec,#mealSec{
+        min-width:170px;
+        max-width:100%;
+        width:100%;
+    }
+}
+
+/* =========================================================
+   KOMPAKT SEÇİM BUTONLARI
+   Kapalıyken sadece buton adı görünür.
+   Tıklanınca native seçim listesi açılır.
+   ========================================================= */
+
+.sure-kontrol,
+.okuyucu-kontrol.kompakt-secim,
+.dil-kontrol,
+.meal-secim-kontrol{
+    position:relative;
+    width:118px;
+    min-width:118px;
+    height:48px;
+    padding:4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+
+.okuyucu-kontrol.kompakt-secim{
+    background:linear-gradient(135deg,#eef5f0,#dfece4);
+    border:2px solid #2f7657;
+    border-radius:18px;
+    box-shadow:0 5px 14px rgba(36,102,76,.16);
+}
+
+.sure-kontrol{
+    width:118px;
+    min-width:118px;
+}
+
+.secim-etiket,
+.sure-etiket{
+    width:100%;
+    min-height:38px;
+    padding:0 7px;
+    font-size:13px;
+    font-weight:900;
+    border-radius:12px;
+    white-space:nowrap;
+    pointer-events:none;
+    z-index:1;
+}
+
+.okuyucu-etiket{
+    color:#fff;
+    background:linear-gradient(135deg,#2f7657,#1e5a40);
+    border:1px solid #184b35;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 2px 5px rgba(0,0,0,.12);
+}
+
+.sure-kontrol .sure-etiket{
+    width:100%;
+}
+
+.sure-kontrol #sureSec,
+.okuyucu-kontrol.kompakt-secim #okuyucuSec,
+.dil-kontrol #dilSec,
+.meal-secim-kontrol #mealSec{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    min-width:0;
+    max-width:none;
+    margin:0;
+    padding:0;
+    opacity:0;
+    cursor:pointer;
+    z-index:5;
+    font-size:0;
+}
+
+.sure-kontrol #sureSec option,
+.okuyucu-kontrol.kompakt-secim #okuyucuSec option,
+.dil-kontrol #dilSec option,
+.meal-secim-kontrol #mealSec option{
+    font-size:14px;
+    color:#173b2d;
+    background:#fff;
+}
+
+.sure-kontrol:after,
+.okuyucu-kontrol.kompakt-secim:after,
+.dil-kontrol:after,
+.meal-secim-kontrol:after{
+    right:8px;
+    z-index:6;
+    pointer-events:none;
+    font-size:12px;
+    font-weight:900;
+}
+
+.sure-kontrol:hover,
+.okuyucu-kontrol.kompakt-secim:hover,
+.dil-kontrol:hover,
+.meal-secim-kontrol:hover{
+    transform:translateY(-2px);
+}
+
+.okuyucu-kontrol.kompakt-secim:focus-within{
+    border-color:#24664c;
+    box-shadow:0 0 0 3px rgba(36,102,76,.16),0 7px 18px rgba(36,102,76,.18);
+}
+
+/* Seçim alanları artık kapalıyken isimlerin genişliğini taşımıyor. */
+#sureSec,
+#okuyucuSec,
+#dilSec,
+#mealSec{
+    overflow:hidden;
+}
+
+/* Küçük ekranlarda da tek tek kompakt butonlar halinde kalırlar. */
+@media(max-width:700px){
+    .kontroller{
+        gap:7px;
+        padding:8px 6px;
+    }
+
+    .sure-kontrol,
+    .okuyucu-kontrol.kompakt-secim,
+    .dil-kontrol,
+    .meal-secim-kontrol{
+        width:110px;
+        min-width:110px;
+        height:46px;
+        flex:0 0 110px;
+    }
+
+    .secim-etiket,
+    .sure-etiket{
+        min-height:36px;
+        font-size:12px;
+    }
+
+    .kontroller > .okuyucu-kontrol.kompakt-secim{
+        width:110px;
+    }
+
+    .durum{
+        flex:1 1 100%;
+        order:20;
+    }
+}
+
+
+@media(max-width:700px){
+    .meal-ayet-no{
+        min-width:31px;
+        width:31px;
+        height:31px;
+        font-size:13px;
+        margin-right:8px;
+    }
+
+    .ayet-no{
+        width:31px;
+        min-width:31px;
+        height:31px;
+        font-size:13px;
+        margin:0 4px;
+    }
+}
+
+
+/* KESİN YEŞİL AYET NUMARALARI */
+.meal-ayet .meal-ayet-no{
+    background:#2f8f5b !important;
+    background-image:none !important;
+    border:2px solid #176b3f !important;
+    color:#ffffff !important;
+    font-weight:900 !important;
+    width:34px !important;
+    min-width:34px !important;
+    height:34px !important;
+    border-radius:50% !important;
+    box-shadow:0 2px 6px rgba(23,107,63,.28) !important;
+}
+
+.ayet .ayet-no{
+    background:#2f8f5b !important;
+    background-image:none !important;
+    border:2px solid #176b3f !important;
+    color:#ffffff !important;
+    font-weight:900 !important;
+    width:34px !important;
+    min-width:34px !important;
+    height:34px !important;
+    border-radius:50% !important;
+    box-shadow:0 2px 6px rgba(23,107,63,.28) !important;
+}
+
+@media(max-width:700px){
+    .meal-ayet .meal-ayet-no,
+    .ayet .ayet-no{
+        width:31px !important;
+        min-width:31px !important;
+        height:31px !important;
+        font-size:13px !important;
+    }
+}
+
+
+/* =========================================================
+   EZBER MODU
+   ========================================================= */
+.ezber-kontrol{
+    width:min(100%,920px);
+    margin:0 auto;
+    text-align:center;
+}
+.ezber-toggle{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    flex:0 0 auto;
+    min-height:42px;
+    padding:10px 13px;
+    border:1px solid rgba(23,59,45,.12);
+    border-radius:12px;
+    background:linear-gradient(135deg,#2d6b5a,#438c78);
+    color:#fff;
+    font-size:14px;
+    font-weight:800;
+    letter-spacing:.1px;
+    cursor:pointer;
+    box-shadow:0 3px 9px rgba(23,59,45,.18);
+    transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+}
+.ezber-toggle:hover{
+    background:linear-gradient(135deg,#377b68,#52a087);
+    transform:translateY(-1px);
+    box-shadow:0 5px 13px rgba(23,59,45,.24);
+}
+.ezber-toggle:active{
+    transform:translateY(0);
+    box-shadow:0 2px 6px rgba(23,59,45,.18);
+}
+.ezber-toggle span{font-size:11px;transition:transform .2s}
+.ezber-toggle.acik span{transform:rotate(180deg)}
+.ezber-icerik{
+    display:none;
+    margin-top:9px;
+    padding:14px;
+    background:linear-gradient(135deg,#f1f8f3,#e5f1e9);
+    border:2px solid #2f7657;
+    border-radius:16px;
+    box-shadow:0 5px 16px rgba(36,102,76,.13);
+}
+.ezber-icerik.acik{display:block}
+.ezber-satir{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(130px,1fr)) auto;
+    gap:9px;
+    align-items:end;
+}
+.ezber-alan{display:flex;flex-direction:column;gap:5px;text-align:left}
+.ezber-alan label{font-size:12px;font-weight:800;color:#38614e}
+.ezber-alan select,.ezber-alan input{
+    width:100%;min-height:42px;box-sizing:border-box;border:2px solid #9ac3aa;
+    border-radius:11px;padding:7px 10px;background:#fff;color:#173b2d;font-size:14px;font-weight:700;outline:none;
+}
+.ezber-alan select:focus,.ezber-alan input:focus{border-color:#2f7657;box-shadow:0 0 0 3px rgba(47,118,87,.14)}
+#ezberBaslat{min-height:42px;padding:8px 15px;border:0;border-radius:11px;background:linear-gradient(135deg,#2f8f5b,#176b3f);color:#fff;font-weight:900;cursor:pointer;white-space:nowrap;box-shadow:0 3px 8px rgba(23,107,63,.22)}
+#ezberBaslat:hover{transform:translateY(-1px)}
+#ezberDurdur{display:none;margin-top:10px;min-height:38px;padding:7px 14px;border:0;border-radius:10px;background:linear-gradient(135deg,#b84a4a,#8f2727);color:#fff;font-weight:900;cursor:pointer}
+.ezber-durum{margin-top:10px;padding:8px 10px;border-radius:10px;background:#fff;border:1px solid #c5ddce;color:#28513e;font-size:13px;font-weight:700}
+@media(max-width:850px){
+    .ezber-satir{
+        grid-template-columns:repeat(2,minmax(130px,1fr));
+    }
+}
+@media(max-width:520px){
+    .ezber-kontrol{padding:11px}
+    .ezber-satir{grid-template-columns:1fr 1fr}
+    .ezber-satir .ezber-baslat-alani{grid-column:1/-1}
+}
+
+</style>
+</head>
+
+<body>
+
+<header class="ust">
+    <h1>Kur'an-ı Kerim</h1>
+    <div id="sayfaNo">1</div>
+</header>
+
+<div class="kontroller">
+
+    <button id="oynat">▶ Oynat</button>
+    <button id="duraklat">⏸ Duraklat</button>
+    <button id="durdur">⏹ Durdur</button>
+    <button id="onceki">◀ Önceki</button>
+    <button id="sonraki">Sonraki ▶</button>
+
+    <div class="sure-kontrol">
+        <span class="sure-etiket">📖 Sûre</span>
+        <select id="sureSec" aria-label="Sûre seçimi"></select>
+    </div>
+
+    <div class="okuyucu-kontrol kompakt-secim">
+        <span class="secim-etiket okuyucu-etiket">🎙 Okuyucu</span>
+        <select id="okuyucuSec">
+            <option value="">Okuyucular yükleniyor...</option>
+        </select>
+    </div>
+
+    <div class="okuyucu-kontrol meal-kontrol dil-kontrol">
+        <span class="secim-etiket dil-etiket">🌐 Dil</span>
+        <select id="dilSec">
+            <option value="turkish">Türkçe</option>
+        </select>
+    </div>
+
+    <div class="okuyucu-kontrol meal-kontrol meal-secim-kontrol">
+        <span class="secim-etiket meal-etiket">📖 Meal</span>
+        <select id="mealSec">
+            <option value="52">Elmalılı Hamdi Yazır</option>
+        </select>
+    </div>
+
+    <div class="ek-kontrol-alani">
+        <button id="sayfayaGit">🔢 Sayfaya Git</button>
+        <button id="favorilerBtn">☆ Favoriler</button>
+        <button id="geceModuBtn">🌙 Gece Modu</button>
+    </div>
+
+    <button type="button" class="ezber-toggle" id="ezberToggle">🧠 Ezber Modu <span id="ezberOk">▼</span></button>
+
+    <div class="durum" id="durum">
+        Hazırlanıyor...
+    </div>
+
+</div>
+
+<div class="favoriler-panel" id="favorilerPanel">
+    <h3>⭐ Favori Ayetler</h3>
+    <div id="favorilerListe">Henüz favori ayet eklenmedi.</div>
+</div>
+
+<div class="sayfa-git-panel" id="sayfaGitPanel">
+    <div class="sayfa-git-kutu">
+        <h3>Sayfaya Git</h3>
+        <input id="sayfaInput" type="number" min="1" max="604" placeholder="1–604">
+        <div class="sayfa-git-butonlar">
+            <button id="sayfaGitIptal">İptal</button>
+            <button id="sayfaGitTamam">Git</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="ezber-kontrol">
+    <div class="ezber-icerik" id="ezberIcerik">
+    <div class="ezber-satir">
+        <div class="ezber-alan">
+            <label for="ezberSure">Sûre</label>
+            <select id="ezberSure"></select>
+        </div>
+        <div class="ezber-alan">
+            <label for="ezberIlk">İlk ayet</label>
+            <input id="ezberIlk" type="number" min="1" value="1">
+        </div>
+        <div class="ezber-alan">
+            <label for="ezberSon">Son ayet</label>
+            <input id="ezberSon" type="number" min="1" value="7">
+        </div>
+        <div class="ezber-alan">
+            <label for="ezberTekrar">Tekrar sayısı</label>
+            <input id="ezberTekrar" type="number" min="1" max="999" value="33">
+        </div>
+        <div class="ezber-baslat-alani">
+            <button id="ezberBaslat">▶ Ezberi Başlat</button>
+        </div>
+    </div>
+    <button id="ezberDurdur">■ Ezberi Durdur</button>
+    <div class="ezber-durum" id="ezberDurum">Sûre, ayet aralığı ve tekrar sayısını seçip ezber modunu başlatabilirsin.</div>
+    </div>
+</div>
+
+<main class="mushaf-alani">
+    <div class="sayfalar">
+        <div class="sayfa" id="mealSayfa"></div>
+        <div class="sayfa" id="sayfa"></div>
+    </div>
+</main>
+
+<div class="mobil-kontrol-bar">
+    <button class="mobil-onceki" data-action="onceki">◀</button>
+    <button class="mobil-oynat" data-action="oynat">▶ Oynat</button>
+    <button class="mobil-duraklat" data-action="duraklat">⏸</button>
+    <button class="mobil-sonraki" data-action="sonraki">▶</button>
+</div>
+
+<script>
+
+/* =========================================================
+   AYARLAR
+   ========================================================= */
+
+let SURE = 6;
+
+const MIN_SAYFA = 1;
+const MAX_SAYFA = 604;
+const TOPLAM_MUSHAF_SAYFASI = 604;
+
+let SAYFA = 1;
+let ILK_AYET = 95;
+let SON_AYET = 110;
+
+/*
+   Okuyucu sistemi
+   MP3Quran API'den, En'âm suresini (6) okuyabilen
+   zamanlamalı okuyucular otomatik olarak alınır.
+*/
+const DEFAULT_READ_ID = 53;
+
+let OKUYUCU = {
+    readId: DEFAULT_READ_ID,
+    name: "AbdulBaset AbdulSamad",
+    server: "https://server7.mp3quran.net/basit/"
+};
+
+let OKUYUCULAR = [];
+
+let MEALLER = [];
+let SECILI_MEAL = 52;
+let SECILI_DIL = "turkish";
+
+const SURELER = [
+[1,"Fâtiha",1],[2,"Bakara",2],[3,"Âl-i İmrân",50],[4,"Nisâ",77],[5,"Mâide",106],[6,"En'âm",128],[7,"A'râf",151],[8,"Enfâl",177],[9,"Tevbe",187],[10,"Yûnus",208],[11,"Hûd",221],[12,"Yûsuf",235],[13,"Ra'd",249],[14,"İbrâhîm",255],[15,"Hicr",261],[16,"Nahl",267],[17,"İsrâ",282],[18,"Kehf",293],[19,"Meryem",308],[20,"Tâhâ",315],[21,"Enbiyâ",322],[22,"Hac",332],[23,"Mü'minûn",342],[24,"Nûr",350],[25,"Furkân",359],[26,"Şuarâ",367],[27,"Neml",377],[28,"Kasas",385],[29,"Ankebût",396],[30,"Rûm",404],[31,"Lokmân",410],[32,"Secde",414],[33,"Ahzâb",417],[34,"Sebe'",433],[35,"Fâtır",438],[36,"Yâsîn",443],[37,"Sâffât",446],[38,"Sâd",449],[39,"Zümer",455],[40,"Mü'min",467],[41,"Fussilet",477],[42,"Şûrâ",483],[43,"Zuhruf",489],[44,"Duhân",496],[45,"Câsiye",499],[46,"Ahkâf",502],[47,"Muhammed",507],[48,"Fetih",511],[49,"Hucurât",515],[50,"Kâf",518],[51,"Zâriyât",519],[52,"Tûr",521],[53,"Necm",523],[54,"Kamer",525],[55,"Rahmân",528],[56,"Vâkıa",531],[57,"Hadîd",534],[58,"Mücâdele",537],[59,"Haşr",540],[60,"Mümtehine",544],[61,"Saf",546],[62,"Cuma",549],[63,"Münâfikûn",551],[64,"Teğâbün",553],[65,"Talâk",555],[66,"Tahrîm",557],[67,"Mülk",562],[68,"Kalem",564],[69,"Hâkka",566],[70,"Meâric",568],[71,"Nûh",570],[72,"Cin",572],[73,"Müzzemmil",574],[74,"Müddessir",575],[75,"Kıyâmet",577],[76,"İnsân",578],[77,"Mürselât",580],[78,"Nebe",582],[79,"Nâziât",583],[80,"Abese",585],[81,"Tekvîr",586],[82,"İnfitâr",587],[83,"Mutaffifîn",587],[84,"İnşikâk",589],[85,"Burûc",590],[86,"Târık",591],[87,"A'lâ",591],[88,"Gâşiye",592],[89,"Fecr",593],[90,"Beled",594],[91,"Şems",595],[92,"Leyl",595],[93,"Duhâ",596],[94,"İnşirâh",596],[95,"Tîn",597],[96,"Alak",597],[97,"Kadir",598],[98,"Beyyine",598],[99,"Zilzâl",599],[100,"Âdiyât",599],[101,"Kâria",600],[102,"Tekâsür",600],[103,"Asr",601],[104,"Hümeze",601],[105,"Fîl",601],[106,"Kureyş",602],[107,"Mâûn",602],[108,"Kevser",602],[109,"Kâfirûn",603],[110,"Nasr",603],[111,"Tebbet",603],[112,"İhlâs",604],[113,"Felak",604],[114,"Nâs",604]
+];
+
+const sureSec = document.getElementById("sureSec");
+
+function sureSeciminiDoldur(){
+    sureSec.innerHTML = "";
+    for(const [no,ad,ilkSayfa] of SURELER){
+        const o=document.createElement("option");
+        o.value=String(no);
+        o.textContent=`${no}. ${ad}`;
+        sureSec.appendChild(o);
+    }
+    sureSec.value=String(SURE);
+}
+
+function seciliSureyiGuncelle(){
+    const bilgi=SURELER.find(x=>x[0]===SURE);
+    if(bilgi) sureSec.value=String(SURE);
+}
+
+
+
+const CIKARILACAK_TURKCE_MEALLER = [
+    "yaşar nuri öztürk",
+    "mustafa islamoğlu",
+    "mustafa islamoğlu",
+    "bayraktar bayraklı",
+    "edip yüksel",
+    "ali bulaç"
+];
+
+/*
+   API'nin verdiği ham meal isimlerini kullanıcıya göstermiyoruz.
+   Menüde bütün meal adları Türkçe ve anlaşılır görünecek.
+*/
+const MEAL_ADLARI = {
+    52: "Elmalılı Hamdi Yazır Meali",
+    77: "Diyanet Meali",
+    112: "Şaban Piriş Meali",
+    124: "Muslim Şahin Meali",
+    210: "Darüsselam Merkezi Meali",
+
+    20: "Sahih International Meali",
+    19: "Muhammed Marmaduke Pickthall Meali",
+    22: "Abdullah Yusuf Ali Meali",
+    85: "Abdul Haleem Meali",
+    84: "Mufti Taqi Usmani Meali",
+    95: "Ebu'l-A'lâ Mevdudi Meali",
+    203: "El-Hilali ve Han Meali",
+    149: "Fadel Soliman – Bridges Meali",
+    31: "Muhammed Hamidullah Meali",
+    45: "Elmir Kuliev Meali",
+    27: "Frank Bubenheim ve Nadeem Meali",
+    56: "Ma Jian Meali",
+    35: "Ryoichi Mita Meali",
+    153: "Hamza Roberto Piccardo Meali",
+    134: "Kral Fahd Kur'an Kompleksi Meali",
+    39: "Abdullah Muhammed Basmeih Meali",
+    48: "Knut Bernström Meali",
+    126: "Besim Korkut Meali"
+};
+
+function mealGorunenAdi(x){
+    if(MEAL_ADLARI[x.id])
+        return MEAL_ADLARI[x.id];
+
+    let ad = (x.author || x.name || "Bilinmeyen").replace(/\s+/g," ").trim();
+
+    /* API'nin dil/kurum ifadelerini Türkçeleştir. */
+    const donusumler = [
+        [/Ministry of Awqaf, Egypt/gi, "Mısır Evkaf Bakanlığı"],
+        [/Office of the president of Maldives/gi, "Maldivler Cumhurbaşkanlığı"],
+        [/King Fahad Quran Complex/gi, "Kral Fahd Kur'an Kompleksi"],
+        [/IslamHouse\.com/gi, "IslamHouse"],
+        [/Montada Islamic Foundation/gi, "Montada İslami Vakfı"],
+        [/Dar Al-Salam Center/gi, "Darüsselam Merkezi"],
+        [/Pioneers of Translation Center/gi, "Çeviri Öncüleri Merkezi"],
+        [/Translation Pioneers Center/gi, "Çeviri Öncüleri Merkezi"],
+        [/Society of Institutes and Universities/gi, "Enstitüler ve Üniversiteler Birliği"],
+        [/Islamic and Cultural League/gi, "İslami ve Kültürel Birlik"],
+        [/Indonesian Islamic Affairs Ministry/gi, "Endonezya İslami İşler Bakanlığı"]
+    ];
+
+    for(const [regex,metin] of donusumler)
+        ad = ad.replace(regex,metin);
+
+    if(!/meali$/i.test(ad))
+        ad += " Meali";
+
+    return ad;
+}
+
+
+/* =========================================================
+   ELEMANLAR
+   ========================================================= */
+
+const sayfa =
+document.getElementById("sayfa");
+
+const mealSayfa =
+document.getElementById("mealSayfa");
+
+const durum =
+document.getElementById("durum");
+
+const oynat =
+document.getElementById("oynat");
+
+const duraklat =
+document.getElementById("duraklat");
+
+const durdur =
+document.getElementById("durdur");
+
+const ezberToggle =
+document.getElementById("ezberToggle");
+
+const ezberIcerik =
+document.getElementById("ezberIcerik");
+
+const ezberSure =
+document.getElementById("ezberSure");
+
+const ezberIlk =
+document.getElementById("ezberIlk");
+
+const ezberSon =
+document.getElementById("ezberSon");
+
+const ezberTekrar =
+document.getElementById("ezberTekrar");
+
+const ezberBaslat =
+document.getElementById("ezberBaslat");
+
+const ezberDurdur =
+document.getElementById("ezberDurdur");
+
+const ezberDurum =
+document.getElementById("ezberDurum");
+
+const onceki =
+document.getElementById("onceki");
+
+const sonraki =
+document.getElementById("sonraki");
+
+const sayfaNo =
+document.getElementById("sayfaNo");
+
+const sayfayaGit = document.getElementById("sayfayaGit");
+const favorilerBtn = document.getElementById("favorilerBtn");
+const geceModuBtn = document.getElementById("geceModuBtn");
+const favorilerPanel = document.getElementById("favorilerPanel");
+const favorilerListe = document.getElementById("favorilerListe");
+const sayfaGitPanel = document.getElementById("sayfaGitPanel");
+const sayfaInput = document.getElementById("sayfaInput");
+const sayfaGitTamam = document.getElementById("sayfaGitTamam");
+const sayfaGitIptal = document.getElementById("sayfaGitIptal");
+
+let favoriAyetler = JSON.parse(localStorage.getItem("kuranFavoriAyetler") || "[]");
+
+function konumuKaydet(){
+    localStorage.setItem("kuranSonSayfa", String(SAYFA));
+}
+
+function favoriMi(ayet){
+    return favoriAyetler.some(x => Number(x.sure)===SURE && Number(x.ayet)===Number(ayet));
+}
+
+function favoriyiDegistir(ayet){
+    const no=Number(ayet);
+    if(favoriMi(no)){
+        favoriAyetler=favoriAyetler.filter(x => !(Number(x.sure)===SURE && Number(x.ayet)===no));
+    }else{
+        favoriAyetler.push({sure:SURE,ayet:no,sayfa:SAYFA});
+    }
+    localStorage.setItem("kuranFavoriAyetler",JSON.stringify(favoriAyetler));
+    favorileriGoster();
+    mushafFavorileriniGuncelle();
+}
+
+function mushafFavorileriniGuncelle(){
+    document.querySelectorAll(".ayet-favori").forEach(btn=>{
+        const aktif=favoriMi(btn.dataset.ayet);
+        btn.textContent=aktif ? "★" : "☆";
+        btn.classList.toggle("aktif",aktif);
+        btn.title=aktif ? "Favorilerden çıkar" : "Favorilere ekle";
+    });
+}
+
+function favorileriGoster(){
+    if(!favoriAyetler.length){
+        favorilerListe.textContent="Henüz favori ayet eklenmedi.";
+        return;
+    }
+    favorilerListe.innerHTML="";
+    [...favoriAyetler].sort((a,b)=>a.ayet-b.ayet).forEach(x=>{
+        const d=document.createElement("div");
+        d.className="favori-satir";
+        d.innerHTML=`<strong>En'âm ${x.ayet}. ayet</strong> <span>(Sayfa ${x.sayfa})</span>`;
+        d.addEventListener("click",()=>{
+            favorilerPanel.classList.remove("acik");
+            if(Number(x.sayfa)!==SAYFA){
+                SAYFA=Number(x.sayfa);
+                sayfaDegisti=true;
+                konumuKaydet();
+                mushafYukle().then(()=>ayeteGit(x.ayet));
+            }else{
+                ayeteGit(x.ayet);
+            }
+        });
+        favorilerListe.appendChild(d);
+    });
+}
+
+function geceModunuUygula(){
+    const acik=localStorage.getItem("kuranGeceModu")==="1";
+    document.body.classList.toggle("gece-modu",acik);
+    geceModuBtn.textContent=acik ? "☀️ Gündüz Modu" : "🌙 Gece Modu";
+}
+
+function varsayilanSayfayiYukle(){
+    const kayit=Number(localStorage.getItem("kuranSonSayfa"));
+    if(kayit>=MIN_SAYFA && kayit<=MAX_SAYFA) SAYFA=kayit;
+}
+
+
+
+const okuyucuSec =
+document.getElementById("okuyucuSec");
+
+const dilSec =
+document.getElementById("dilSec");
+
+const mealSec =
+document.getElementById("mealSec");
+
+
+/* =========================================================
+   DEĞİŞKENLER
+   ========================================================= */
+
+let audio = null;
+let ezberAudio = null;
+
+let zamanlar = [];
+let tumZamanlar = [];
+
+let oynuyor = false;
+
+let timer = null;
+
+let aktifAyet = null;
+
+/* Ezber modu */
+let ezberAktif = false;
+let ezberSureNo = 6;
+let ezberIlkAyet = 1;
+let ezberSonAyet = 7;
+let ezberTekrarHedef = 33;
+let ezberTekrarNo = 0;
+let ezberAyetIndex = 0;
+let ezberZamanlar = [];
+let ezberTimer = null;
+let ezberSesHazirlaniyor = false;
+
+// Sayfa değiştiğinde ses, yeni sayfanın ilk ayetinden başlamalı.
+let sayfaDegisti = true;
+
+
+/* =========================================================
+   TÜM KURAN: 1 - 604 SAYFA
+   ========================================================= */
+
+function sureBilgisiniSayfadanBelirle(verses){
+    const ilk = (verses || [])[0];
+    const chapterId = Number(ilk?.chapter_id);
+
+    if(Number.isFinite(chapterId)){
+        const bilgi = SURELER.find(x => x[0] === chapterId);
+        if(bilgi){
+            SURE = chapterId;
+            sureSec.value = String(chapterId);
+            return bilgi;
+        }
+    }
+
+    return SURELER.find(x => x[0] === SURE) || null;
+}
+
+function sayfaAraliginiAyarla(verses){
+    const nums = (verses || [])
+        .map(v => Number(v.verse_number))
+        .filter(Number.isFinite);
+
+    if(!nums.length)
+        throw new Error("Bu sayfada ayet bulunamadı: " + SAYFA);
+
+    ILK_AYET = Math.min(...nums);
+    SON_AYET = Math.max(...nums);
+
+    sayfaNo.textContent =
+        String(SAYFA);
+}
+
+/* =========================================================
+   OKUYUCULARI YÜKLE
+   ========================================================= */
+
+async function okuyuculariYukle(){
+
+    try{
+
+        okuyucuSec.innerHTML =
+        '<option value="">Okuyucular yükleniyor...</option>';
+
+        /*
+         * MP3Quran API:
+         * En'âm suresine sahip Hafs okuyuşları.
+         */
+        const reciterUrl =
+        "https://mp3quran.net/api/v3/reciters" +
+        `?language=tr&sura=${SURE}&rewaya=1`;
+
+        const timingReadsUrl =
+        "https://mp3quran.net/api/v3/ayat_timing/reads";
+
+        const [reciterCevap, timingCevap] =
+        await Promise.all([
+            fetch(reciterUrl,{cache:"no-store"}),
+            fetch(timingReadsUrl,{cache:"no-store"})
+        ]);
+
+        if(!reciterCevap.ok || !timingCevap.ok)
+            throw new Error("Okuyucu listesi alınamadı.");
+
+        const reciterData =
+        await reciterCevap.json();
+
+        const timingReads =
+        await timingCevap.json();
+
+        const zamanliIdler =
+        new Set(
+            (timingReads || [])
+            .map(x=>Number(x.id))
+            .filter(Number.isFinite)
+        );
+
+        const liste=[];
+
+        for(const reciter of (reciterData.reciters || [])){
+
+            for(const moshaf of (reciter.moshaf || [])){
+
+                const readId =
+                Number(moshaf.id);
+
+                const sureler =
+                String(moshaf.surah_list || "")
+                .split(",")
+                .map(Number);
+
+                /*
+                 * Ayet vurgulaması için zamanlaması bulunan
+                 * ve En'âm suresini içeren okuyuşları göster.
+                 */
+                if(
+                    !zamanliIdler.has(readId) ||
+                    !sureler.includes(SURE)
+                ){
+                    continue;
+                }
+
+                liste.push({
+                    readId,
+                    name:
+                    reciter.name +
+                    " — " +
+                    (moshaf.name || "Murattal"),
+                    server:
+                    moshaf.server
+                });
+            }
+        }
+
+        /*
+         * Mevcut Abdulbasit kaydını ilk sıraya al.
+         */
+        liste.sort((a,b)=>{
+
+            if(a.readId===DEFAULT_READ_ID) return -1;
+            if(b.readId===DEFAULT_READ_ID) return 1;
+
+            return a.name.localeCompare(
+                b.name,
+                "tr"
+            );
+        });
+
+        /*
+         * Aynı read ID tekrar etmesin.
+         */
+        const benzersiz=[];
+        const gorulen=new Set();
+
+        for(const x of liste){
+
+            if(gorulen.has(x.readId))
+                continue;
+
+            gorulen.add(x.readId);
+            benzersiz.push(x);
+        }
+
+        OKUYUCULAR=benzersiz;
+
+        okuyucuSec.innerHTML="";
+
+        if(!OKUYUCULAR.length){
+            throw new Error(
+                "Zamanlamalı okuyucu bulunamadı."
+            );
+        }
+
+        for(const x of OKUYUCULAR){
+
+            const option =
+            document.createElement("option");
+
+            option.value =
+            String(x.readId);
+
+            option.textContent =
+            x.name;
+
+            okuyucuSec.appendChild(option);
+        }
+
+        const varsayilan =
+        OKUYUCULAR.find(
+            x=>x.readId===DEFAULT_READ_ID
+        ) || OKUYUCULAR[0];
+
+        OKUYUCU=varsayilan;
+
+        okuyucuSec.value =
+        String(OKUYUCU.readId);
+
+    }catch(e){
+
+        console.error(
+            "Okuyucular yüklenemedi:",
+            e
+        );
+
+        /*
+         * API listesi erişilemezse mevcut Abdulbasit
+         * ayarı çalışmaya devam etsin.
+         */
+        okuyucuSec.innerHTML =
+        '<option value="53">AbdulBaset AbdulSamad</option>';
+
+        okuyucuSec.value="53";
+
+        OKUYUCU={
+            readId:DEFAULT_READ_ID,
+            name:"AbdulBaset AbdulSamad",
+            server:"https://server7.mp3quran.net/basit/"
+        };
+    }
+
+}
+
+
+async function mealleriYukle(){
+    try{
+        const cevap = await fetch(
+            "https://api.quran.com/api/v4/resources/translations",
+            {cache:"no-store"}
+        );
+
+        if(!cevap.ok)
+            throw new Error("Meal listesi alınamadı.");
+
+        const data = await cevap.json();
+        const kaynaklar = (data.translations || []).map(x => ({
+            id:Number(x.id),
+            name:x.name || x.author_name || "Bilinmeyen meal",
+            author:x.author_name || x.name || "",
+            language:(x.language_name || "").toLowerCase()
+        })).filter(x => x.id);
+
+        MEALLER = kaynaklar.filter(x =>
+            !(x.language === "turkish" && CIKARILACAK_TURKCE_MEALLER.some(ad =>
+                (x.author || x.name).toLowerCase().includes(ad.toLowerCase())
+            ))
+        );
+
+        const diller = [...new Map(
+            MEALLER.map(x => [x.language, x.language])
+        ).values()].sort((a,b) => a.localeCompare(b,"tr"));
+
+        dilSec.innerHTML="";
+        for(const dil of diller){
+            const o=document.createElement("option");
+            o.value=dil;
+            o.textContent=dil === "turkish" ? "Türkçe" : dil.charAt(0).toUpperCase()+dil.slice(1);
+            dilSec.appendChild(o);
+        }
+
+        SECILI_DIL = diller.includes("turkish") ? "turkish" : diller[0];
+        dilSec.value=SECILI_DIL;
+        mealSecGuncelle();
+    }catch(e){
+        console.error("Mealler yüklenemedi:",e);
+        MEALLER=[
+            {id:52,name:"Elmalılı Hamdi Yazır",author:"Elmalili Hamdi Yazir",language:"turkish"},
+            {id:77,name:"Diyanet İşleri Başkanlığı",author:"Diyanet Isleri",language:"turkish"},
+            {id:112,name:"Şaban Britç",author:"Shaban Britch",language:"turkish"},
+            {id:124,name:"Muslim Shahin",author:"Muslim Shahin",language:"turkish"},
+            {id:210,name:"Dar Al-Salam Center",author:"Dar Al-Salam Center",language:"turkish"}
+        ];
+        SECILI_DIL="turkish";
+        dilSec.innerHTML='<option value="turkish">Türkçe</option>';
+        mealSecGuncelle();
+    }
+}
+
+function mealSecGuncelle(){
+    const liste=MEALLER.filter(x=>x.language===SECILI_DIL);
+    mealSec.innerHTML="";
+
+    for(const x of liste){
+        const o=document.createElement("option");
+        o.value=String(x.id);
+        o.textContent=mealGorunenAdi(x);
+        mealSec.appendChild(o);
+    }
+
+    if(!liste.length) return;
+
+    const uygun = liste.find(x=>x.id===SECILI_MEAL) || liste[0];
+    SECILI_MEAL=uygun.id;
+    mealSec.value=String(SECILI_MEAL);
+}
+
+
+
+/* =========================================================
+   EZBER MODU FONKSİYONLARI
+   ========================================================= */
+
+function ezberSureleriDoldur(){
+    ezberSure.innerHTML = "";
+    for(const s of SURELER){
+        const o = document.createElement("option");
+        o.value = String(s[0]);
+        o.textContent = s[2] ? `${s[0]}. ${s[2]} (${s[1]})` : `${s[0]}. ${s[1]}`;
+        ezberSure.appendChild(o);
+    }
+    ezberSure.value = String(SURE);
+    ezberAyetSinirlariniGuncelle();
+}
+
+async function ezberAyetSayisiniBul(sureNo){
+    try{
+        const cevap = await fetch(
+            `https://api.quran.com/api/v4/verses/by_chapter/${sureNo}?fields=verse_number&per_page=300`,
+            {cache:"no-store"}
+        );
+        if(!cevap.ok) throw new Error("Ayet sayısı alınamadı");
+        const data = await cevap.json();
+        return (data.verses || []).length || 1;
+    }catch(e){
+        console.error(e);
+        const tahmini = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,52,52,44,28,28,20,56,40,31,50,40,46,42,29,19,36,25,22,17,19,26,30,20,15,21,11,8,8,19,5,8,8,11,11,8,3,9,5,4,7,3,6,3,5,4,5,6,3,4,5,6,3,6];
+        return tahmini[sureNo-1] || 1;
+    }
+}
+
+async function ezberAyetSinirlariniGuncelle(){
+    const sayi = await ezberAyetSayisiniBul(Number(ezberSure.value));
+    ezberIlk.max = sayi;
+    ezberSon.max = sayi;
+    if(Number(ezberIlk.value) > sayi) ezberIlk.value = sayi;
+    if(Number(ezberSon.value) > sayi) ezberSon.value = sayi;
+    ezberSon.placeholder = String(sayi);
+}
+
+async function ezberZamanlariniYukle(){
+    const sureNo = Number(ezberSureNo);
+    const cevap = await fetch(
+        `https://mp3quran.net/api/v3/ayat_timing?surah=${sureNo}&read=${OKUYUCU.readId}`,
+        {cache:"no-store"}
+    );
+    if(!cevap.ok) throw new Error("Ezber zamanlaması alınamadı");
+
+    const data = await cevap.json();
+    ezberZamanlar = (data || []).map(x=>({
+        ayet:Number(x.ayah),
+        baslangic:Number(x.start_time)/1000,
+        bitis:Number(x.end_time)/1000
+    })).filter(x=>x.ayet >= ezberIlkAyet && x.ayet <= ezberSonAyet);
+
+    if(!ezberZamanlar.length)
+        throw new Error("Seçilen ayetler için zamanlama bulunamadı");
+}
+
+function ezberAudioOlustur(){
+    const sure = String(ezberSureNo).padStart(3,"0");
+    const okuyu = (typeof OKUYUCU !== "undefined" && OKUYUCU && OKUYUCU.server)
+        ? OKUYUCU.server
+        : "https://server7.mp3quran.net/basit/";
+    const url = okuyu.endsWith("/") ? `${okuyu}${sure}.mp3` : `${okuyu}/${sure}.mp3`;
+
+    if(ezberAudio && ezberAudio.src && ezberAudio.src.includes(`/${sure}.mp3`))
+        return;
+
+    if(ezberAudio){
+        ezberAudio.pause();
+        ezberAudio.src="";
+    }
+
+    ezberAudio = new Audio(url);
+    ezberAudio.preload="auto";
+}
+
+function ezberVurgula(ayetNo){
+    document.querySelectorAll(".ayet.okunuyor,.meal-ayet.okunuyor")
+        .forEach(el=>el.classList.remove("okunuyor"));
+
+    document.querySelectorAll(`.ayet[data-ayet="${ayetNo}"], .meal-ayet[data-ayet="${ayetNo}"]`)
+        .forEach(el=>el.classList.add("okunuyor"));
+}
+
+function ezberTemizle(){
+    if(ezberTimer) clearTimeout(ezberTimer);
+    ezberTimer=null;
+    if(ezberAudio){
+        ezberAudio.pause();
+        ezberAudio.currentTime=0;
+    }
+    ezberVurguyuKaldir();
+}
+
+function ezberVurguyuKaldir(){
+    document.querySelectorAll(".ayet.okunuyor,.meal-ayet.okunuyor")
+        .forEach(el=>el.classList.remove("okunuyor"));
+}
+
+async function ezberAyetOynat(){
+    if(!ezberAktif || !ezberAudio) return;
+
+    const z = ezberZamanlar[ezberAyetIndex];
+    if(!z){
+        ezberTekrarNo++;
+        if(ezberTekrarNo > ezberTekrarHedef){
+            ezberAktif=false;
+            ezberDurdur.style.display="none";
+            ezberBaslat.style.display="";
+            ezberDurum.textContent=`Ezber tamamlandı — ${ezberTekrarHedef} tekrar yapıldı.`;
+            ezberTemizle();
+            return;
+        }
+        ezberAyetIndex=0;
+        return ezberAyetOynat();
+    }
+
+    ezberVurgula(z.ayet);
+    ezberDurum.textContent =
+        `${ezberSure.value ? ezberSure.options[ezberSure.selectedIndex].textContent : "Sûre"} — ` +
+        `${ezberIlkAyet}-${ezberSonAyet}. ayetler | ` +
+        `${ezberTekrarNo}/${ezberTekrarHedef}. tekrar | ${z.ayet}. ayet`;
+
+    try{
+        ezberAudio.currentTime = z.baslangic;
+        await ezberAudio.play();
+    }catch(e){
+        console.error(e);
+        ezberDurum.textContent="Ses başlatılamadı. Oynat düğmesine basıp tekrar deneyin.";
+        ezberAktif=false;
+        ezberDurdur.style.display="none";
+        ezberBaslat.style.display="";
+        return;
+    }
+
+    const sureMs = Math.max(250, (z.bitis-z.baslangic)*1000);
+    ezberTimer=setTimeout(()=>{
+        ezberAyetIndex++;
+        ezberAyetOynat();
+    }, sureMs);
+}
+
+async function ezberiBaslat(){
+    const sureNo=Number(ezberSure.value);
+    const ilk=Number(ezberIlk.value);
+    const son=Number(ezberSon.value);
+    const tekrar=Number(ezberTekrar.value);
+
+    if(!sureNo || !ilk || !son || !tekrar || ilk>son || tekrar<1){
+        ezberDurum.textContent="Lütfen sûre, geçerli ayet aralığı ve tekrar sayısını seç.";
+        return;
+    }
+
+    ezberAktif=false;
+    ezberTemizle();
+
+    ezberSureNo=sureNo;
+    ezberIlkAyet=ilk;
+    ezberSonAyet=son;
+    ezberTekrarHedef=Math.min(999,tekrar);
+    ezberTekrarNo=1;
+    ezberAyetIndex=0;
+
+    ezberBaslat.disabled=true;
+    ezberDurum.textContent="Ezber zamanlaması yükleniyor...";
+
+    try{
+        await ezberZamanlariniYukle();
+        ezberAudioOlustur();
+
+        await new Promise((resolve,reject)=>{
+            if(ezberAudio.readyState >= 1) return resolve();
+            const ok=()=>{cleanup();resolve()};
+            const er=()=>{cleanup();reject(new Error("Ses yüklenemedi"))};
+            const cleanup=()=>{
+                ezberAudio.removeEventListener("loadedmetadata",ok);
+                ezberAudio.removeEventListener("error",er);
+            };
+            ezberAudio.addEventListener("loadedmetadata",ok);
+            ezberAudio.addEventListener("error",er);
+        });
+
+        if(!ezberZamanlar.length) throw new Error("Zamanlama bulunamadı");
+
+        ezberAktif=true;
+        ezberDurdur.style.display="inline-block";
+        ezberBaslat.style.display="none";
+        ezberBaslat.disabled=false;
+
+        // Seçilen sûreyi normal okuyucu alanında da göster.
+        if(typeof sureSec !== "undefined" && sureSec){
+            sureSec.value=String(sureNo);
+        }
+
+        ezberAyetOynat();
+    }catch(e){
+        console.error(e);
+        ezberBaslat.disabled=false;
+        ezberDurum.textContent="Ezber modu başlatılamadı. Seçilen okuyucunun bu sûre için zamanlaması olmayabilir.";
+    }
+}
+
+function ezberiDurdur(){
+    ezberAktif=false;
+    if(ezberTimer) clearTimeout(ezberTimer);
+    ezberTimer=null;
+    if(ezberAudio){
+        ezberAudio.pause();
+    }
+    ezberVurguyuKaldir();
+    ezberDurdur.style.display="none";
+    ezberBaslat.style.display="";
+    ezberBaslat.disabled=false;
+    ezberDurum.textContent="Ezber modu durduruldu.";
+}
+
+/* =========================================================
+   MUSHAFI YÜKLE
+   ========================================================= */
+
+async function mushafYukle(){
+
+    try{
+
+        durum.textContent =
+        "Mushaf yükleniyor...";
+
+
+        const url =
+        "https://api.quran.com/api/v4/verses/by_page/" + SAYFA +
+        "?words=true" +
+        "&translations=" + SECILI_MEAL +
+        "&word_fields=text_uthmani,page_number,line_number,location,verse_key" +
+        "&fields=text_uthmani,page_number,verse_number,verse_key" +
+        "&per_page=50";
+
+
+        const cevap =
+        await fetch(url,{cache:"no-store"});
+
+
+        if(!cevap.ok)
+            throw new Error(
+                "Mushaf API " + cevap.status
+            );
+
+
+        const data =
+        await cevap.json();
+
+        /*
+         * Sayfanın ayet aralığını tahmin etmiyoruz.
+         * Quran API'nin o sayfa için döndürdüğü gerçek
+         * ayetlerden otomatik olarak belirliyoruz.
+         */
+        sureBilgisiniSayfadanBelirle(data.verses);
+        sayfaAraliginiAyarla(data.verses);
+
+        sayfa.innerHTML="";
+        mealSayfa.innerHTML="";
+
+
+        const baslik =
+        document.createElement("div");
+
+        baslik.className="baslik";
+
+        const sureBilgi = SURELER.find(x => x[0] === SURE);
+
+        baslik.textContent =
+            sureBilgi ? sureBilgi[1] : "Kur'an-ı Kerim";
+
+        sayfa.appendChild(baslik);
+
+        const sayfaBilgi =
+        document.createElement("div");
+
+        sayfaBilgi.className="sayfaBilgi";
+        sayfaBilgi.textContent =
+            (sureBilgi ? sureBilgi[1] : "Kur'an-ı Kerim") +
+            " Suresi • " + ILK_AYET + "–" + SON_AYET + ". ayetler";
+
+        sayfa.appendChild(sayfaBilgi);
+
+        const mealBaslik =
+        document.createElement("div");
+
+        mealBaslik.className="meal-baslik";
+        const dilAdi = dilSec.options[dilSec.selectedIndex]?.textContent || "Türkçe";
+        mealBaslik.textContent = dilAdi + " Meal";
+        mealSayfa.appendChild(mealBaslik);
+
+        const mealKaynak =
+        document.createElement("div");
+
+        mealKaynak.className="meal-kaynak";
+        const seciliMeal = MEALLER.find(x => x.id === SECILI_MEAL);
+        mealKaynak.textContent = seciliMeal
+            ? mealGorunenAdi(seciliMeal)
+            : "Meal";
+        mealSayfa.appendChild(mealKaynak);
+
+
+        const satirlar={};
+
+
+        for(const ayet of data.verses){
+
+            const ayetNo =
+            Number(ayet.verse_number);
+
+
+            if(
+                ayetNo < ILK_AYET ||
+                ayetNo > SON_AYET
+            ){
+                continue;
+            }
+
+
+            for(const word of ayet.words || []){
+
+                const line =
+                Number(word.line_number);
+
+
+                if(!satirlar[line])
+                    satirlar[line]=[];
+
+
+                satirlar[line].push({
+
+                    text:
+                    word.text_uthmani || "",
+
+                    ayet:
+                    ayetNo
+
+                });
+
+            }
+
+        }
+
+
+        const satirNo =
+        Object.keys(satirlar)
+        .map(Number)
+        .sort((a,b)=>a-b);
+
+
+        for(const lineNo of satirNo){
+
+            const satir =
+            document.createElement("div");
+
+            satir.className =
+            "satir";
+
+
+            let aktifAyet=null;
+
+            let aktifSpan=null;
+
+
+            for(const word of satirlar[lineNo]){
+
+                if(word.ayet !== aktifAyet){
+
+                    aktifAyet =
+                    word.ayet;
+
+
+                    aktifSpan =
+                    document.createElement("span");
+
+
+                    aktifSpan.className =
+                    "ayet";
+
+
+                    aktifSpan.dataset.ayet =
+                    word.ayet;
+
+                    const favoriBtn=document.createElement("button");
+                    favoriBtn.className="ayet-favori";
+                    favoriBtn.dataset.ayet=word.ayet;
+                    favoriBtn.textContent=favoriMi(word.ayet) ? "★" : "☆";
+                    favoriBtn.title=favoriMi(word.ayet) ? "Favorilerden çıkar" : "Favorilere ekle";
+                    favoriBtn.addEventListener("click",ev=>{
+                        ev.stopPropagation();
+                        favoriyiDegistir(word.ayet);
+                    });
+                    satir.appendChild(favoriBtn);
+
+
+                    satir.appendChild(
+                        aktifSpan
+                    );
+
+                }
+
+
+                const kelime =
+                document.createElement("span");
+
+
+                kelime.className =
+                "kelime";
+
+
+                kelime.textContent =
+                word.text + " ";
+
+
+                aktifSpan.appendChild(
+                    kelime
+                );
+
+            }
+
+
+            sayfa.appendChild(satir);
+
+        }
+
+        /*
+         * Türkçe mealini aynı ayet numaralarıyla oluştur.
+         */
+        for(const ayet of data.verses){
+
+            const ayetNo =
+            Number(ayet.verse_number);
+
+            if(
+                ayetNo < ILK_AYET ||
+                ayetNo > SON_AYET
+            ){
+                continue;
+            }
+
+            const mealAyet =
+            document.createElement("div");
+
+            mealAyet.className="meal-ayet";
+            mealAyet.dataset.ayet=ayetNo;
+
+            const mealNo =
+            document.createElement("span");
+
+            mealNo.className="meal-ayet-no";
+            mealNo.textContent=String(ayetNo);
+
+            const mealMetin =
+            document.createElement("span");
+
+            const ceviri =
+            ayet.translations &&
+            ayet.translations[0] &&
+            ayet.translations[0].text
+            ? ayet.translations[0].text
+            : "Meal bulunamadı.";
+
+            mealMetin.textContent =
+            ceviri.replace(/<[^>]*>/g,"").trim();
+
+            mealAyet.appendChild(mealNo);
+            mealAyet.appendChild(mealMetin);
+            mealSayfa.appendChild(mealAyet);
+        }
+
+        /*
+         * Kullanıcı doğrudan istediği ayete tıklayabilsin.
+         * Aynı ayet birden fazla satıra bölünmüşse bütün
+         * parçaları aynı ayete bağlanır.
+         */
+        sayfa
+        .querySelectorAll(".ayet")
+        .forEach(el=>{
+
+            el.addEventListener("click", async ()=>{
+                const ayetNo = Number(el.dataset.ayet);
+                await ayeteGit(ayetNo);
+            });
+
+        });
+
+        mealSayfa
+        .querySelectorAll(".meal-ayet")
+        .forEach(el=>{
+
+            el.addEventListener("click", async ()=>{
+                const ayetNo = Number(el.dataset.ayet);
+                await ayeteGit(ayetNo);
+            });
+
+        });
+
+
+        durum.textContent =
+        "Abdulbasit hazır";
+
+
+    }catch(e){
+
+        console.error(e);
+
+        durum.textContent =
+        "Mushaf yüklenemedi";
+
+    }
+
+}
+
+
+/* =========================================================
+   SESİ HAZIRLA
+   ========================================================= */
+
+function sesHazirla(){
+
+    if(audio)
+        return;
+
+
+    const sesUrl =
+    OKUYUCU.server +
+    String(SURE).padStart(3,"0") +
+    ".mp3";
+
+    audio =
+    new Audio(sesUrl);
+
+
+    audio.preload="auto";
+
+
+    audio.addEventListener(
+        "loadedmetadata",
+        ()=>{
+            console.log(
+                "Abdulbasit ses süresi:",
+                audio.duration
+            );
+        }
+    );
+
+
+    audio.addEventListener(
+        "ended",
+        ()=>{
+
+            oynuyor=false;
+
+            if(timer)
+                cancelAnimationFrame(timer);
+
+            temizle();
+
+            durum.textContent =
+            "Tamamlandı";
+
+        }
+    );
+
+
+    audio.addEventListener(
+        "error",
+        e=>{
+
+            console.error(
+                "Ses hatası:",
+                e
+            );
+
+            durum.textContent =
+            OKUYUCU.name +
+            " sesi yüklenemedi.";
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   ABDULBASIT AYET ZAMANLARINI AL
+   ========================================================= */
+
+async function zamanlariYukle(){
+
+    try{
+
+        durum.textContent =
+        OKUYUCU.name +
+        " zamanlaması yükleniyor...";
+
+
+        const url =
+        `https://mp3quran.net/api/v3/ayat_timing?surah=${SURE}&read=${OKUYUCU.readId}`;
+
+
+        const cevap =
+        await fetch(
+            url,
+            {cache:"no-store"}
+        );
+
+
+        if(!cevap.ok){
+
+            throw new Error(
+                "Timing API " +
+                cevap.status
+            );
+
+        }
+
+
+        const data =
+        await cevap.json();
+
+
+        console.log(
+            "Abdulbasit timing:",
+            data
+        );
+
+
+        /*
+         * Zamanlamayı sadece mevcut sayfaya göre
+         * saklamıyoruz. Tüm sureyi bellekte tutuyoruz.
+         * Böylece 140 -> 141 -> 142 geçişlerinde
+         * yeni sayfanın ayetleri de bulunabiliyor.
+         */
+        tumZamanlar =
+        data
+        .map(x=>({
+
+            ayet:
+            Number(x.ayah),
+
+            baslangic:
+            Number(x.start_time)/1000,
+
+            bitis:
+            Number(x.end_time)/1000
+
+        }));
+
+        zamanlar =
+        tumZamanlar.filter(x=>
+            x.ayet >= ILK_AYET &&
+            x.ayet <= SON_AYET
+        );
+
+
+        /*
+         * Bazı MP3Quran kayıtlarında
+         * ayet numarası 0'dan başlayabilir.
+         * Gerçek ayetler 1'den başlıyorsa
+         * doğrudan kullan.
+         */
+
+        if(!zamanlar.some(z=>z.ayet===ILK_AYET)){
+            console.warn(
+                "Bu sayfanın ilk ayeti için zamanlama bulunamadı:",
+                ILK_AYET
+            );
+        }
+
+
+        console.log(
+            "Kullanılan zamanlar:",
+            zamanlar
+        );
+
+
+        if(!zamanlar.length){
+
+            durum.textContent =
+            OKUYUCU.name +
+            " ayet zamanlaması bulunamadı.";
+
+            return false;
+
+        }
+
+
+        durum.textContent =
+        "Abdulbasit hazır";
+
+
+        return true;
+
+
+    }catch(e){
+
+        console.error(
+            "Zamanlama hatası:",
+            e
+        );
+
+
+        durum.textContent =
+        "Abdulbasit zamanlaması yüklenemedi.";
+
+
+        return false;
+
+    }
+
+}
+
+
+function sayfaZamanlariniAyarla(){
+
+    if(!tumZamanlar.length){
+        zamanlar = [];
+        return;
+    }
+
+    zamanlar =
+    tumZamanlar.filter(x=>
+        x.ayet >= ILK_AYET &&
+        x.ayet <= SON_AYET
+    );
+
+}
+
+
+/* =========================================================
+   VURGUNU TEMİZLE
+   ========================================================= */
+
+function temizle(){
+
+    document
+    .querySelectorAll(
+        ".ayet.okunuyor, .meal-ayet.okunuyor"
+    )
+    .forEach(el=>{
+
+        el.classList.remove(
+            "okunuyor"
+        );
+
+    });
+
+
+    aktifAyet=null;
+
+}
+
+
+/* =========================================================
+   AYET TAKİBİ
+   ========================================================= */
+
+function takipEt(){
+
+    if(
+        !audio ||
+        !oynuyor
+    ){
+
+        return;
+
+    }
+
+
+    const saniye =
+    audio.currentTime;
+
+
+    let aktif=null;
+
+
+    for(const z of zamanlar){
+
+        if(
+            saniye >= z.baslangic &&
+            saniye < z.bitis
+        ){
+
+            aktif=z;
+
+            break;
+
+        }
+
+    }
+
+
+    if(aktif){
+
+        /*
+         * Aynı ayet tekrar tekrar DOM'dan
+         * aranmasın.
+         */
+
+        if(
+            aktifAyet !== aktif.ayet
+        ){
+
+            temizle();
+
+
+            const hedefler =
+            document.querySelectorAll(
+                `.ayet[data-ayet="${aktif.ayet}"]`
+            );
+
+
+            if(hedefler.length){
+
+                /*
+                 * Aynı ayet birden fazla satıra
+                 * bölünmüş olabilir.
+                 * Ayetin bütün satır parçalarını
+                 * birlikte sarıya boya.
+                 */
+
+                hedefler.forEach(hedef=>{
+                    hedef.classList.add("okunuyor");
+                });
+
+                const mealHedefler =
+                mealSayfa.querySelectorAll(
+                    `.meal-ayet[data-ayet="${aktif.ayet}"]`
+                );
+
+                mealHedefler.forEach(hedef=>{
+                    hedef.classList.add("okunuyor");
+                });
+
+
+                /*
+                 * Sayfayı sürekli oynatmasın.
+                 * Sadece yeni ayete geçildiğinde
+                 * ilk parçasını ortalasın.
+                 */
+
+                hedefler[0].scrollIntoView({
+                    behavior:"smooth",
+                    block:"center"
+                });
+
+
+                durum.textContent =
+                `${OKUYUCU.name} — ${SURE}:${aktif.ayet} okunuyor...`;
+
+
+                aktifAyet =
+                aktif.ayet;
+
+            }
+
+        }
+
+    }
+
+
+    timer =
+    requestAnimationFrame(
+        takipEt
+    );
+
+}
+
+
+/* =========================================================
+   TIKLANAN AYETE GİT
+   ========================================================= */
+
+async function ayeteGit(ayetNo){
+
+    try{
+
+        sesHazirla();
+
+        /* Zamanlamalar henüz alınmadıysa tüm sureyi al. */
+        if(!tumZamanlar.length){
+            const tamam = await zamanlariYukle();
+            if(!tamam)
+                return;
+        }
+
+        /* Sadece ekranda bulunan sayfanın zamanlarını kullan. */
+        sayfaZamanlariniAyarla();
+
+        const hedef = tumZamanlar.find(
+            z=>z.ayet===ayetNo
+        );
+
+        if(!hedef){
+            durum.textContent =
+            "Bu ayet için ses zamanlaması bulunamadı.";
+            return;
+        }
+
+        /*
+         * Ses metadata'sı henüz hazır değilse önce hazır olmasını bekle.
+         */
+        if(audio.readyState === 0){
+            await new Promise((resolve,reject)=>{
+                const tamam = ()=>{
+                    temizleDinleyiciler();
+                    resolve();
+                };
+                const hata = ()=>{
+                    temizleDinleyiciler();
+                    reject(new Error("Ses yüklenemedi."));
+                };
+                function temizleDinleyiciler(){
+                    audio.removeEventListener("loadedmetadata", tamam);
+                    audio.removeEventListener("error", hata);
+                }
+                audio.addEventListener("loadedmetadata", tamam, {once:true});
+                audio.addEventListener("error", hata, {once:true});
+            });
+        }
+
+        audio.currentTime = hedef.baslangic;
+        aktifAyet = null;
+        sayfaDegisti = false;
+
+        temizle();
+
+        await audio.play();
+        oynuyor = true;
+
+        if(timer)
+            cancelAnimationFrame(timer);
+
+        takipEt();
+
+        durum.textContent =
+        `${OKUYUCU.name} — ${SURE}:${ayetNo} okunuyor...`;
+
+    }catch(e){
+
+        console.error("Ayet oynatma hatası:", e);
+        durum.textContent =
+        "Ayet başlatılamadı.";
+
+    }
+
+}
+
+
+/* =========================================================
+   OYNAT
+   ========================================================= */
+
+oynat.addEventListener(
+    "click",
+    async()=>{
+
+        try{
+
+            sesHazirla();
+
+
+            /*
+             * Zamanlama daha önce alınmadıysa
+             * şimdi al.
+             */
+
+            if(!zamanlar.length){
+
+                const tamam =
+                await zamanlariYukle();
+
+
+                if(!tamam)
+                    return;
+
+            }
+
+            /* Zamanlama yüklendikten sonra daima mevcut
+             * sayfanın ayetlerini kullan. */
+            sayfaZamanlariniAyarla();
+
+            /*
+             * Bulunduğumuz sayfanın ilk ayetinin
+             * ses başlangıcını bul.
+             */
+
+            const ilk =
+            zamanlar.find(
+                z=>z.ayet===ILK_AYET
+            );
+
+
+            /*
+             * Sayfa değiştiyse eski sayfanın kaldığı
+             * saniyeden devam etme. Yeni sayfanın
+             * ilk ayetinden başla.
+             */
+
+            if(
+                sayfaDegisti &&
+                ilk
+            ){
+
+                audio.currentTime =
+                ilk.baslangic;
+
+                aktifAyet = null;
+                sayfaDegisti = false;
+
+            }
+
+            /*
+             * Uygulama ilk kez açıldığında da
+             * ilk ayetten başla.
+             */
+
+            if(
+                audio.currentTime < 1 &&
+                ilk
+            ){
+
+                audio.currentTime =
+                ilk.baslangic;
+
+            }
+
+
+            await audio.play();
+
+
+            oynuyor=true;
+
+
+            if(timer)
+                cancelAnimationFrame(
+                    timer
+                );
+
+
+            takipEt();
+
+
+            durum.textContent =
+            OKUYUCU.name +
+            " okuyor...";
+
+
+        }catch(e){
+
+            console.error(
+                "Oynatma hatası:",
+                e
+            );
+
+
+            durum.textContent =
+            "Ses başlatılamadı.";
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   DURAKLAT
+   ========================================================= */
+
+duraklat.addEventListener(
+    "click",
+    ()=>{
+
+        if(!audio)
+            return;
+
+
+        audio.pause();
+
+
+        oynuyor=false;
+
+
+        if(timer)
+            cancelAnimationFrame(
+                timer
+            );
+
+
+        durum.textContent =
+        "Duraklatıldı";
+
+    }
+);
+
+
+/* =========================================================
+   DURDUR
+   ========================================================= */
+
+durdur.addEventListener(
+    "click",
+    ()=>{
+
+        if(audio){
+
+            audio.pause();
+
+
+            const ilk =
+            zamanlar.find(
+                z=>z.ayet===ILK_AYET
+            );
+
+
+            audio.currentTime =
+            ilk
+            ? ilk.baslangic
+            : 0;
+
+        }
+
+
+        oynuyor=false;
+
+
+        if(timer)
+            cancelAnimationFrame(
+                timer
+            );
+
+
+        temizle();
+
+
+        durum.textContent =
+        "Hazır";
+
+    }
+);
+
+
+/* =========================================================
+   OKUYUCU DEĞİŞTİRME
+   ========================================================= */
+
+okuyucuSec.addEventListener(
+    "change",
+    async ()=>{
+
+        const readId =
+        Number(okuyucuSec.value);
+
+        const secilen =
+        OKUYUCULAR.find(
+            x=>x.readId===readId
+        );
+
+        if(!secilen)
+            return;
+
+        if(audio)
+            audio.pause();
+
+        oynuyor=false;
+
+        if(timer)
+            cancelAnimationFrame(timer);
+
+        temizle();
+
+        audio=null;
+        zamanlar=[];
+        tumZamanlar=[];
+        aktifAyet=null;
+        sayfaDegisti=true;
+
+        OKUYUCU=secilen;
+
+        durum.textContent =
+        OKUYUCU.name +
+        " seçildi. Hazır.";
+
+    }
+);
+
+
+sureSec.addEventListener("change", async ()=>{
+    const yeniSure=Number(sureSec.value);
+    const bilgi=SURELER.find(x=>x[0]===yeniSure);
+    if(!bilgi) return;
+
+    if(audio) audio.pause();
+    oynuyor=false;
+    if(timer) cancelAnimationFrame(timer);
+    temizle();
+    audio=null;
+    zamanlar=[];
+    tumZamanlar=[];
+    aktifAyet=null;
+    sayfaDegisti=true;
+
+    SURE=yeniSure;
+    // Sûre seçildiğinde sûre başlangıç sayfasına git.
+    SAYFA=bilgi[2];
+    konumuKaydet();
+    durum.textContent=`${bilgi[1]} Sûresi yükleniyor...`;
+
+    // Okuyucu listesini yeni sûreye göre tazele.
+    await okuyuculariYukle();
+    await mushafYukle();
+});
+
+/* Ezber modu aç/kapat */
+ezberToggle.addEventListener("click", ()=>{
+    const acik = ezberIcerik.classList.toggle("acik");
+    ezberToggle.classList.toggle("acik", acik);
+});
+
+/* Ezber modu olayları */
+ezberSure.addEventListener("change", async ()=>{
+    await ezberAyetSinirlariniGuncelle();
+});
+
+ezberIlk.addEventListener("change", ()=>{
+    if(Number(ezberIlk.value) > Number(ezberSon.value))
+        ezberSon.value=ezberIlk.value;
+});
+
+ezberSon.addEventListener("change", ()=>{
+    if(Number(ezberSon.value) < Number(ezberIlk.value))
+        ezberIlk.value=ezberSon.value;
+});
+
+ezberBaslat.addEventListener("click", ezberiBaslat);
+ezberDurdur.addEventListener("click", ezberiDurdur);
+
+ezberSureleriDoldur();
+
+dilSec.addEventListener("change", async ()=>{
+    SECILI_DIL=dilSec.value;
+    mealSecGuncelle();
+    durum.textContent="Meal seçenekleri güncelleniyor...";
+    await mushafYukle();
+});
+
+mealSec.addEventListener("change", async ()=>{
+    const yeniMeal=Number(mealSec.value);
+    if(!MEALLER.some(x => x.id===yeniMeal && x.language===SECILI_DIL)) return;
+    SECILI_MEAL=yeniMeal;
+    durum.textContent="Meal değiştiriliyor...";
+    await mushafYukle();
+});
+
+
+/* =========================================================
+   KULLANICI KOLAYLIKLARI
+   ========================================================= */
+
+sayfayaGit.addEventListener("click",()=>{
+    sayfaInput.value=SAYFA;
+    sayfaGitPanel.classList.add("acik");
+    setTimeout(()=>{sayfaInput.focus();sayfaInput.select()},50);
+});
+
+sayfaGitIptal.addEventListener("click",()=>sayfaGitPanel.classList.remove("acik"));
+sayfaGitPanel.addEventListener("click",e=>{if(e.target===sayfaGitPanel) sayfaGitPanel.classList.remove("acik")});
+
+sayfaGitTamam.addEventListener("click",async()=>{
+    const hedef=Number(sayfaInput.value);
+    if(hedef<MIN_SAYFA || hedef>MAX_SAYFA){
+        durum.textContent=`Lütfen ${MIN_SAYFA}-${MAX_SAYFA}. sayfa arasında bir değer girin.`;
+        return;
+    }
+    sayfaGitPanel.classList.remove("acik");
+    if(audio) audio.pause();
+    oynuyor=false;
+    if(timer) cancelAnimationFrame(timer);
+    temizle();
+    SAYFA=hedef;
+    sayfaDegisti=true;
+    konumuKaydet();
+    await mushafYukle();
+});
+
+sayfaInput.addEventListener("keydown",e=>{if(e.key==="Enter") sayfaGitTamam.click()});
+
+favorilerBtn.addEventListener("click",()=>{
+    favorilerPanel.classList.toggle("acik");
+    if(favorilerPanel.classList.contains("acik")) favorileriGoster();
+});
+
+geceModuBtn.addEventListener("click",()=>{
+    const acik=!document.body.classList.contains("gece-modu");
+    localStorage.setItem("kuranGeceModu",acik?"1":"0");
+    geceModunuUygula();
+});
+
+document.querySelectorAll(".mobil-kontrol-bar [data-action]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+        const hedef=btn.dataset.action;
+        if(hedef==="oynat") oynat.click();
+        if(hedef==="duraklat") duraklat.click();
+        if(hedef==="onceki") onceki.click();
+        if(hedef==="sonraki") sonraki.click();
+    });
+});
+
+/* =========================================================
+   SAYFA GEÇİŞLERİ
+   ========================================================= */
+
+onceki.addEventListener("click", async ()=>{
+    if(SAYFA <= MIN_SAYFA) return;
+
+    if(audio) audio.pause();
+    oynuyor=false;
+
+    if(timer) cancelAnimationFrame(timer);
+
+    temizle();
+
+    SAYFA--;
+    sayfaDegisti = true;
+    konumuKaydet();
+    await mushafYukle();
+});
+
+sonraki.addEventListener("click", async ()=>{
+    if(SAYFA >= MAX_SAYFA) return;
+
+    if(audio) audio.pause();
+    oynuyor=false;
+
+    if(timer) cancelAnimationFrame(timer);
+
+    temizle();
+
+    SAYFA++;
+    sayfaDegisti = true;
+    konumuKaydet();
+    await mushafYukle();
+});
+
+/* =========================================================
+   BAŞLAT
+   ========================================================= */
+
+varsayilanSayfayiYukle();
+sureSeciminiDoldur();
+geceModunuUygula();
+favorileriGoster();
+
+(async()=>{
+    await okuyuculariYukle();
+    await mealleriYukle();
+    await mushafYukle();
+})();
+
+</script>
+
+</body>
+</html>
