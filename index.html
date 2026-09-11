@@ -416,6 +416,45 @@ body.gece-modu #sureSec{color:#f1e8cf}
     box-shadow:0 0 0 3px rgba(220,170,30,.28),0 3px 8px rgba(0,0,0,.2);
 }
 
+
+/* Sayfa içinde sûre geçişleri */
+.sure-gecis-baslik{
+    text-align:center;
+    margin:28px auto 18px;
+    padding:10px 18px;
+    border-top:1px solid rgba(180,145,60,.45);
+    border-bottom:1px solid rgba(180,145,60,.45);
+    color:#fff;
+    font-family:"Times New Roman",serif;
+    font-size:24px;
+    font-weight:700;
+    background:linear-gradient(135deg,#2f8f5b,#176b3f);
+    border-radius:8px;
+    box-shadow:0 2px 6px rgba(23,107,63,.22);
+}
+.sure-gecis-baslik small{
+    display:block;
+    margin-top:3px;
+    font-family:Arial,sans-serif;
+    font-size:13px;
+    font-weight:400;
+    color:rgba(255,255,255,.9);
+}
+.meal-sure-gecis{
+    text-align:center;
+    margin:24px 0 12px;
+    padding:8px 12px;
+    border-top:1px solid rgba(180,145,60,.45);
+    border-bottom:1px solid rgba(180,145,60,.45);
+    color:#fff;
+    font-family:"Times New Roman",serif;
+    font-size:21px;
+    font-weight:700;
+    background:linear-gradient(135deg,#2f8f5b,#176b3f);
+    border-radius:8px;
+    box-shadow:0 2px 6px rgba(23,107,63,.22);
+}
+
 @media(max-width:1100px){
     .sayfalar{
         grid-template-columns:1fr;
@@ -1086,13 +1125,14 @@ const TOPLAM_MUSHAF_SAYFASI = 604;
 let SAYFA = 1;
 let ILK_AYET = 1;
 let SON_AYET = 7;
+let SAYFA_AYETLERI = []; // Sayfadaki ayetlerin sûre+ayet sırası
 
 /*
    Okuyucu sistemi
    MP3Quran API'den, En'âm suresini (6) okuyabilen
    zamanlamalı okuyucular otomatik olarak alınır.
 */
-const DEFAULT_READ_ID = 53;
+const DEFAULT_READ_ID = 5;
 
 let OKUYUCU = {
     readId: DEFAULT_READ_ID,
@@ -1107,7 +1147,7 @@ let SECILI_MEAL = 52;
 let SECILI_DIL = "turkish";
 
 const SURELER = [
-[1,"Fâtiha",1],[2,"Bakara",2],[3,"Âl-i İmrân",50],[4,"Nisâ",77],[5,"Mâide",106],[6,"En'âm",128],[7,"A'râf",151],[8,"Enfâl",177],[9,"Tevbe",187],[10,"Yûnus",208],[11,"Hûd",221],[12,"Yûsuf",235],[13,"Ra'd",249],[14,"İbrâhîm",255],[15,"Hicr",261],[16,"Nahl",267],[17,"İsrâ",282],[18,"Kehf",293],[19,"Meryem",308],[20,"Tâhâ",315],[21,"Enbiyâ",322],[22,"Hac",332],[23,"Mü'minûn",342],[24,"Nûr",350],[25,"Furkân",359],[26,"Şuarâ",367],[27,"Neml",377],[28,"Kasas",385],[29,"Ankebût",396],[30,"Rûm",404],[31,"Lokmân",410],[32,"Secde",414],[33,"Ahzâb",417],[34,"Sebe'",433],[35,"Fâtır",438],[36,"Yâsîn",443],[37,"Sâffât",446],[38,"Sâd",449],[39,"Zümer",455],[40,"Mü'min",467],[41,"Fussilet",477],[42,"Şûrâ",483],[43,"Zuhruf",489],[44,"Duhân",496],[45,"Câsiye",499],[46,"Ahkâf",502],[47,"Muhammed",507],[48,"Fetih",511],[49,"Hucurât",515],[50,"Kâf",518],[51,"Zâriyât",519],[52,"Tûr",521],[53,"Necm",523],[54,"Kamer",525],[55,"Rahmân",528],[56,"Vâkıa",531],[57,"Hadîd",534],[58,"Mücâdele",537],[59,"Haşr",540],[60,"Mümtehine",544],[61,"Saf",546],[62,"Cuma",549],[63,"Münâfikûn",551],[64,"Teğâbün",553],[65,"Talâk",555],[66,"Tahrîm",557],[67,"Mülk",562],[68,"Kalem",564],[69,"Hâkka",566],[70,"Meâric",568],[71,"Nûh",570],[72,"Cin",572],[73,"Müzzemmil",574],[74,"Müddessir",575],[75,"Kıyâmet",577],[76,"İnsân",578],[77,"Mürselât",580],[78,"Nebe",582],[79,"Nâziât",583],[80,"Abese",585],[81,"Tekvîr",586],[82,"İnfitâr",587],[83,"Mutaffifîn",587],[84,"İnşikâk",589],[85,"Burûc",590],[86,"Târık",591],[87,"A'lâ",591],[88,"Gâşiye",592],[89,"Fecr",593],[90,"Beled",594],[91,"Şems",595],[92,"Leyl",595],[93,"Duhâ",596],[94,"İnşirâh",596],[95,"Tîn",597],[96,"Alak",597],[97,"Kadir",598],[98,"Beyyine",598],[99,"Zilzâl",599],[100,"Âdiyât",599],[101,"Kâria",600],[102,"Tekâsür",600],[103,"Asr",601],[104,"Hümeze",601],[105,"Fîl",601],[106,"Kureyş",602],[107,"Mâûn",602],[108,"Kevser",602],[109,"Kâfirûn",603],[110,"Nasr",603],[111,"Tebbet",603],[112,"İhlâs",604],[113,"Felak",604],[114,"Nâs",604]
+[1,"Fâtiha",1],[2,"Bakara",2],[3,"Âl-i İmrân",50],[4,"Nisâ",77],[5,"Mâide",106],[6,"En'âm",128],[7,"A'râf",151],[8,"Enfâl",177],[9,"Tevbe",187],[10,"Yûnus",208],[11,"Hûd",221],[12,"Yûsuf",235],[13,"Ra'd",249],[14,"İbrâhîm",255],[15,"Hicr",262],[16,"Nahl",267],[17,"İsrâ",282],[18,"Kehf",293],[19,"Meryem",305],[20,"Tâhâ",312],[21,"Enbiyâ",322],[22,"Hac",332],[23,"Mü'minûn",342],[24,"Nûr",350],[25,"Furkân",359],[26,"Şuarâ",367],[27,"Neml",377],[28,"Kasas",385],[29,"Ankebût",396],[30,"Rûm",404],[31,"Lokmân",411],[32,"Secde",415],[33,"Ahzâb",418],[34,"Sebe'",428],[35,"Fâtır",434],[36,"Yâsîn",440],[37,"Sâffât",446],[38,"Sâd",453],[39,"Zümer",458],[40,"Mü'min",467],[41,"Fussilet",477],[42,"Şûrâ",483],[43,"Zuhruf",489],[44,"Duhân",496],[45,"Câsiye",499],[46,"Ahkâf",502],[47,"Muhammed",507],[48,"Fetih",511],[49,"Hucurât",515],[50,"Kâf",518],[51,"Zâriyât",520],[52,"Tûr",523],[53,"Necm",526],[54,"Kamer",528],[55,"Rahmân",531],[56,"Vâkıa",534],[57,"Hadîd",537],[58,"Mücâdele",542],[59,"Haşr",545],[60,"Mümtehine",549],[61,"Saf",551],[62,"Cuma",553],[63,"Münâfikûn",554],[64,"Teğâbün",556],[65,"Talâk",558],[66,"Tahrîm",560],[67,"Mülk",562],[68,"Kalem",564],[69,"Hâkka",566],[70,"Meâric",568],[71,"Nûh",570],[72,"Cin",572],[73,"Müzzemmil",574],[74,"Müddessir",575],[75,"Kıyâmet",577],[76,"İnsân",578],[77,"Mürselât",580],[78,"Nebe",582],[79,"Nâziât",583],[80,"Abese",585],[81,"Tekvîr",586],[82,"İnfitâr",587],[83,"Mutaffifîn",587],[84,"İnşikâk",589],[85,"Burûc",590],[86,"Târık",591],[87,"A'lâ",591],[88,"Gâşiye",592],[89,"Fecr",593],[90,"Beled",594],[91,"Şems",595],[92,"Leyl",595],[93,"Duhâ",596],[94,"İnşirâh",596],[95,"Tîn",597],[96,"Alak",597],[97,"Kadir",598],[98,"Beyyine",598],[99,"Zilzâl",599],[100,"Âdiyât",599],[101,"Kâria",600],[102,"Tekâsür",600],[103,"Asr",601],[104,"Hümeze",601],[105,"Fîl",601],[106,"Kureyş",602],[107,"Mâûn",602],[108,"Kevser",602],[109,"Kâfirûn",603],[110,"Nasr",603],[111,"Tebbet",603],[112,"İhlâs",604],[113,"Felak",604],[114,"Nâs",604]
 ];
 
 const sureSec = document.getElementById("sureSec");
@@ -1332,9 +1372,11 @@ function geceModunuUygula(){
 }
 
 function varsayilanSayfayiYukle(){
-    // Site ilk açıldığında her zaman Kur'an'ın ilk sayfası açılır.
-    // Böylece eski localStorage kaydı başlangıç sûresini değiştiremez.
-    SAYFA = 1;
+    // İlk kullanımda 1. sayfa açılır; daha önce okuyan kullanıcı
+    // uygulamayı yeniden açtığında kaldığı sayfadan devam eder.
+    const kayit = Number(localStorage.getItem("kuranSonSayfa"));
+    SAYFA = (Number.isInteger(kayit) && kayit >= MIN_SAYFA && kayit <= MAX_SAYFA) ? kayit : 1;
+    // Sûre, sayfa yüklendiğinde o sayfadaki ayetlerden otomatik belirlenir.
     SURE = 1;
     sayfaDegisti = true;
 }
@@ -1356,6 +1398,7 @@ document.getElementById("mealSec");
    ========================================================= */
 
 let audio = null;
+let audioSure = null;
 let ezberAudio = null;
 
 let zamanlar = [];
@@ -1366,6 +1409,7 @@ let oynuyor = false;
 let timer = null;
 
 let aktifAyet = null;
+let otomatikGecisYapiliyor = false;
 
 /* Ezber modu */
 let ezberAktif = false;
@@ -1381,6 +1425,10 @@ let ezberSesHazirlaniyor = false;
 
 // Sayfa değiştiğinde ses, yeni sayfanın ilk ayetinden başlamalı.
 let sayfaDegisti = true;
+
+// Sûre menüsünden seçim yapıldığında, başlangıç sayfasında başka bir sûre
+// daha önce başlıyor olsa bile seçilen sûreyi koru.
+let secilenSureyiKoru = false;
 
 
 /* =========================================================
@@ -1419,18 +1467,36 @@ function sureBilgisiniSayfadanBelirle(verses){
 }
 
 function sayfaAraliginiAyarla(verses){
-    const nums = (verses || [])
-        .map(v => Number(v.verse_number))
-        .filter(Number.isFinite);
+    SAYFA_AYETLERI = (verses || [])
+        .map(v => ({
+            sure: Number(v.chapter_id || String(v.verse_key || "").split(":")[0]),
+            ayet: Number(v.verse_number)
+        }))
+        .filter(x => Number.isFinite(x.sure) && x.sure >= 1 && x.sure <= 114 && Number.isFinite(x.ayet));
 
-    if(!nums.length)
+    if(!SAYFA_AYETLERI.length)
         throw new Error("Bu sayfada ayet bulunamadı: " + SAYFA);
 
-    ILK_AYET = Math.min(...nums);
-    SON_AYET = Math.max(...nums);
+    /*
+     * ÖNEMLİ: Bir mushaf sayfasında birden fazla sûre olabilir.
+     * Örneğin bir sayfa Yusuf 118 ile başlayıp Ra'd 1-4 ile devam edebilir.
+     * Bu durumda tüm sayfanın ilk ve son ayet numarasını birbirine bağlamak
+     * (118–4 gibi) yanlış olur ve bütün ayetleri filtreleyip ekrandan siler.
+     * ILK_AYET / SON_AYET yalnızca o anda seçili SURE için tutulur.
+     */
+    let aktifSureAyetleri = SAYFA_AYETLERI.filter(x => x.sure === Number(SURE));
 
-    sayfaNo.textContent =
-        String(SAYFA);
+    if(!aktifSureAyetleri.length){
+        const ilkSure = SAYFA_AYETLERI[0].sure;
+        SURE = ilkSure;
+        if(sureSec) sureSec.value = String(SURE);
+        aktifSureAyetleri = SAYFA_AYETLERI.filter(x => x.sure === SURE);
+    }
+
+    ILK_AYET = Math.min(...aktifSureAyetleri.map(x => x.ayet));
+    SON_AYET = Math.max(...aktifSureAyetleri.map(x => x.ayet));
+
+    sayfaNo.textContent = String(SAYFA);
 }
 
 /* =========================================================
@@ -1589,9 +1655,9 @@ async function okuyuculariYukle(){
          * ayarı çalışmaya devam etsin.
          */
         okuyucuSec.innerHTML =
-        '<option value="53">AbdulBaset AbdulSamad</option>';
+        '<option value="5">AbdulBaset AbdulSamad</option>';
 
-        okuyucuSec.value="53";
+        okuyucuSec.value="5";
 
         OKUYUCU={
             readId:DEFAULT_READ_ID,
@@ -1718,6 +1784,24 @@ async function ezberAyetSinirlariniGuncelle(){
     ezberSon.placeholder = String(sayi);
 }
 
+async function ezberBaslangicSayfasiniBul(sureNo, ayetNo){
+    try{
+        const cevap = await fetch(
+            `https://api.quran.com/api/v4/verses/by_chapter/${sureNo}?fields=verse_number,page_number,verse_key&per_page=300`,
+            {cache:"no-store"}
+        );
+        if(!cevap.ok) throw new Error("Ezber ayet sayfası alınamadı");
+        const data = await cevap.json();
+        const hedef = (data.verses || []).find(v => Number(v.verse_number) === Number(ayetNo));
+        const sayfaNo = Number(hedef && hedef.page_number);
+        if(!sayfaNo) throw new Error("Seçilen ayetin sayfası bulunamadı");
+        return sayfaNo;
+    }catch(e){
+        console.error(e);
+        throw e;
+    }
+}
+
 async function ezberZamanlariniYukle(){
     const sureNo = Number(ezberSureNo);
     const cevap = await fetch(
@@ -1756,11 +1840,11 @@ function ezberAudioOlustur(){
     ezberAudio.preload="auto";
 }
 
-function ezberVurgula(ayetNo){
+function ezberVurgula(ayetNo, sureNo=ezberSureNo){
     document.querySelectorAll(".ayet.okunuyor,.meal-ayet.okunuyor")
         .forEach(el=>el.classList.remove("okunuyor"));
 
-    document.querySelectorAll(`.ayet[data-ayet="${ayetNo}"], .meal-ayet[data-ayet="${ayetNo}"]`)
+    document.querySelectorAll(`.ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"], .meal-ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"]`)
         .forEach(el=>el.classList.add("okunuyor"));
 }
 
@@ -1847,6 +1931,19 @@ async function ezberiBaslat(){
     ezberDurum.textContent="Ezber zamanlaması yükleniyor...";
 
     try{
+        /* Ezber başlarken seçilen ilk ayetin bulunduğu gerçek sayfaya git.
+         * Böylece örn. 151. sûrenin 2-3. ayetleri seçildiğinde ekranda
+         * başka bir sayfa/sûre kalmaz; mushaf doğrudan hedef ayetin sayfasını açar. */
+        const hedefSayfa = await ezberBaslangicSayfasiniBul(sureNo, ilk);
+        SAYFA = hedefSayfa;
+        SURE = sureNo;
+        if(typeof sureSec !== "undefined" && sureSec)
+            sureSec.value = String(sureNo);
+        secilenSureyiKoru = true;
+        sayfaDegisti = true;
+        await mushafYukle();
+        try{ window.scrollTo({top:0, behavior:"smooth"}); }catch(e){}
+
         await ezberZamanlariniYukle();
         ezberAudioOlustur();
 
@@ -1935,7 +2032,38 @@ async function mushafYukle(){
          * Quran API'nin o sayfa için döndürdüğü gerçek
          * ayetlerden otomatik olarak belirliyoruz.
          */
-        sureBilgisiniSayfadanBelirle(data.verses);
+        const oncekiSure = SURE;
+
+        // Sûre menüsünden geldiysek ve hedef sayfada seçilen sûre gerçekten
+        // bulunuyorsa, sayfanın ilk ayeti başka bir sûreden başlasa bile
+        // SURE değerini seçilen sûrede tut. Örn. Müddessir 575. sayfada
+        // başlar; sayfanın ilk ayeti Müzzemmil 20 olabilir.
+        const secilenSureSayfadaVar = (data.verses || []).some(v => {
+            const ch = Number(
+                v.chapter_id ||
+                String(v.verse_key || '').split(':')[0]
+            );
+            return ch === SURE;
+        });
+
+        if(!(secilenSureyiKoru && secilenSureSayfadaVar)){
+            sureBilgisiniSayfadanBelirle(data.verses);
+        }
+        secilenSureyiKoru = false;
+
+        /* Yeni sayfa başka sûreyse eski sûrenin ses/zamanlamasını
+         * kesinlikle yeni sûrede kullanma. */
+        if(oncekiSure !== SURE){
+            if(audio){
+                try{ audio.pause(); }catch(e){}
+            }
+            audio = null;
+            audioSure = null;
+            tumZamanlar = [];
+            zamanlar = [];
+            aktifAyet = null;
+        }
+
         sayfaAraliginiAyarla(data.verses);
 
         sayfa.innerHTML="";
@@ -1948,40 +2076,12 @@ async function mushafYukle(){
         baslik.className="baslik";
 
         const sureBilgi = SURELER.find(x => x[0] === SURE);
+        const sayfadakiSureler = [...new Set(SAYFA_AYETLERI.map(x => x.sure))];
+        const sayfadakiSureMetinleri = sayfadakiSureler
+            .map(no => SURELER.find(x => x[0] === no)?.[1])
+            .filter(Boolean);
 
-        baslik.textContent =
-            sureBilgi ? sureBilgi[1] : "Kur'an-ı Kerim";
-
-        sayfa.appendChild(baslik);
-
-        const sayfaBilgi =
-        document.createElement("div");
-
-        sayfaBilgi.className="sayfaBilgi";
-        sayfaBilgi.textContent =
-            (sureBilgi ? sureBilgi[1] : "Kur'an-ı Kerim") +
-            " Suresi • " + ILK_AYET + "–" + SON_AYET + ". ayetler";
-
-        sayfa.appendChild(sayfaBilgi);
-
-        const mealBaslik =
-        document.createElement("div");
-
-        mealBaslik.className="meal-baslik";
-        const dilAdi = dilSec.options[dilSec.selectedIndex]?.textContent || "Türkçe";
-        mealBaslik.textContent = dilAdi + " Meal";
-        mealSayfa.appendChild(mealBaslik);
-
-        const mealKaynak =
-        document.createElement("div");
-
-        mealKaynak.className="meal-kaynak";
-        const seciliMeal = MEALLER.find(x => x.id === SECILI_MEAL);
-        mealKaynak.textContent = seciliMeal
-            ? mealGorunenAdi(seciliMeal)
-            : "Meal";
-        mealSayfa.appendChild(mealKaynak);
-
+        // Üst bilgi başlıkları kaldırıldı.
 
         const satirlar={};
 
@@ -1991,13 +2091,6 @@ async function mushafYukle(){
             const ayetNo =
             Number(ayet.verse_number);
 
-
-            if(
-                ayetNo < ILK_AYET ||
-                ayetNo > SON_AYET
-            ){
-                continue;
-            }
 
 
             for(const word of ayet.words || []){
@@ -2010,13 +2103,22 @@ async function mushafYukle(){
                     satirlar[line]=[];
 
 
+                const ayetSure = Number(
+                    ayet.chapter_id ||
+                    String(ayet.verse_key || "").split(":")[0] ||
+                    SURE
+                );
+
                 satirlar[line].push({
 
                     text:
                     word.text_uthmani || "",
 
                     ayet:
-                    ayetNo
+                    ayetNo,
+
+                    sure:
+                    ayetSure
 
                 });
 
@@ -2031,6 +2133,8 @@ async function mushafYukle(){
         .sort((a,b)=>a-b);
 
 
+        let mushafSonSure = null;
+
         for(const lineNo of satirNo){
 
             const satir =
@@ -2041,16 +2145,31 @@ async function mushafYukle(){
 
 
             let aktifAyet=null;
+            let aktifSureAyetKey=null;
 
             let aktifSpan=null;
 
 
             for(const word of satirlar[lineNo]){
 
-                if(word.ayet !== aktifAyet){
+                /* Sayfa içinde yeni sûre başlıyorsa, ilk ayetin hemen
+                 * üstüne ayrı bir sûre başlığı koy. */
+                if(word.sure !== mushafSonSure){
+                    const gecis = document.createElement("div");
+                    gecis.className = "sure-gecis-baslik";
+                    const sureGecisBilgi = SURELER.find(x => x[0] === word.sure);
+                    gecis.innerHTML = (sureGecisBilgi ? sureGecisBilgi[1] : "Sûre") +
+                        '<small>' + word.sure + ". Sûre" + '</small>';
+                    sayfa.appendChild(gecis);
+                    mushafSonSure = word.sure;
+                }
 
-                    aktifAyet =
-                    word.ayet;
+                const sureAyetKey = word.sure + ":" + word.ayet;
+
+                if(sureAyetKey !== aktifSureAyetKey){
+
+                    aktifSureAyetKey = sureAyetKey;
+                    aktifAyet = word.ayet;
 
 
                     aktifSpan =
@@ -2063,6 +2182,9 @@ async function mushafYukle(){
 
                     aktifSpan.dataset.ayet =
                     word.ayet;
+
+                    aktifSpan.dataset.sure =
+                    word.sure;
 
                     const favoriBtn=document.createElement("button");
                     favoriBtn.className="ayet-favori";
@@ -2109,16 +2231,22 @@ async function mushafYukle(){
         /*
          * Türkçe mealini aynı ayet numaralarıyla oluştur.
          */
+        let mealSonSure = null;
+
         for(const ayet of data.verses){
 
             const ayetNo =
             Number(ayet.verse_number);
 
-            if(
-                ayetNo < ILK_AYET ||
-                ayetNo > SON_AYET
-            ){
-                continue;
+            const mealSure = Number(ayet.chapter_id || String(ayet.verse_key || "").split(":")[0] || SURE);
+
+            if(mealSure !== mealSonSure){
+                const mealGecis = document.createElement("div");
+                mealGecis.className = "meal-sure-gecis";
+                const mealSureBilgi = SURELER.find(x => x[0] === mealSure);
+                mealGecis.textContent = mealSureBilgi ? mealSureBilgi[1] + " Sûresi" : "Sûre";
+                mealSayfa.appendChild(mealGecis);
+                mealSonSure = mealSure;
             }
 
             const mealAyet =
@@ -2126,6 +2254,7 @@ async function mushafYukle(){
 
             mealAyet.className="meal-ayet";
             mealAyet.dataset.ayet=ayetNo;
+            mealAyet.dataset.sure=mealSure;
 
             const mealNo =
             document.createElement("span");
@@ -2162,7 +2291,8 @@ async function mushafYukle(){
 
             el.addEventListener("click", async ()=>{
                 const ayetNo = Number(el.dataset.ayet);
-                await ayeteGit(ayetNo);
+                const sureNo = Number(el.dataset.sure || SURE);
+                await ayeteGit(ayetNo, sureNo);
             });
 
         });
@@ -2173,7 +2303,8 @@ async function mushafYukle(){
 
             el.addEventListener("click", async ()=>{
                 const ayetNo = Number(el.dataset.ayet);
-                await ayeteGit(ayetNo);
+                const sureNo = Number(el.dataset.sure || SURE);
+                await ayeteGit(ayetNo, sureNo);
             });
 
         });
@@ -2213,6 +2344,7 @@ function sesHazirla(){
     audio =
     new Audio(sesUrl);
 
+    audioSure = SURE;
 
     audio.preload="auto";
 
@@ -2230,18 +2362,62 @@ function sesHazirla(){
 
     audio.addEventListener(
         "ended",
-        ()=>{
+        async ()=>{
+            if(!oynuyor) return;
 
-            oynuyor=false;
+            const bitenSure = Number(audioSure || SURE);
+            const bitenAyet = Number(aktifAyet || 0);
 
-            if(timer)
-                cancelAnimationFrame(timer);
+            if(timer) cancelAnimationFrame(timer);
+
+            // Temizlemeden önce hangi ayetin bittiğini biliyoruz.
+            const mevcutIndex = SAYFA_AYETLERI.findIndex(x =>
+                x.sure === bitenSure && x.ayet === bitenAyet
+            );
+
+            const sonrakiAyet = mevcutIndex >= 0
+                ? SAYFA_AYETLERI[mevcutIndex + 1]
+                : null;
 
             temizle();
 
-            durum.textContent =
-            "Tamamlandı";
+            try{
+                if(sonrakiAyet){
+                    // Aynı mushaf sayfasında sûre değişiyorsa bile
+                    // doğrudan sıradaki ayete geç.
+                    SURE = sonrakiAyet.sure;
+                    if(sureSec) sureSec.value = String(SURE);
+                    audio = null;
+                    audioSure = null;
+                    tumZamanlar = [];
+                    zamanlar = [];
+                    aktifAyet = null;
+                    await ayeteGit(sonrakiAyet.ayet, sonrakiAyet.sure);
+                    return;
+                }
 
+                if(SAYFA < MAX_SAYFA){
+                    // Sayfanın son ayeti bitti: otomatik olarak sonraki sayfayı aç.
+                    SAYFA++;
+                    sayfaDegisti = true;
+                    konumuKaydet();
+                    await mushafYukle();
+
+                    const ilk = SAYFA_AYETLERI[0];
+                    if(ilk){
+                        await ayeteGit(ilk.ayet, ilk.sure);
+                    }
+                    window.scrollTo({top:0, behavior:"smooth"});
+                    return;
+                }
+
+                oynuyor=false;
+                durum.textContent = "Hatim tamamlandı.";
+            }catch(e){
+                console.error("Otomatik devam hatası:", e);
+                oynuyor=false;
+                durum.textContent = "Sonraki sayfaya geçilemedi.";
+            }
         }
     );
 
@@ -2330,11 +2506,7 @@ async function zamanlariYukle(){
 
         }));
 
-        zamanlar =
-        tumZamanlar.filter(x=>
-            x.ayet >= ILK_AYET &&
-            x.ayet <= SON_AYET
-        );
+        sayfaZamanlariniAyarla();
 
 
         /*
@@ -2396,18 +2568,18 @@ async function zamanlariYukle(){
 
 
 function sayfaZamanlariniAyarla(){
-
     if(!tumZamanlar.length){
         zamanlar = [];
         return;
     }
 
-    zamanlar =
-    tumZamanlar.filter(x=>
-        x.ayet >= ILK_AYET &&
-        x.ayet <= SON_AYET
+    const sayfadakiAyetler = new Set(
+        SAYFA_AYETLERI
+            .filter(x => x.sure === Number(SURE))
+            .map(x => x.ayet)
     );
 
+    zamanlar = tumZamanlar.filter(x => sayfadakiAyetler.has(x.ayet));
 }
 
 
@@ -2438,6 +2610,64 @@ function temizle(){
 /* =========================================================
    AYET TAKİBİ
    ========================================================= */
+
+async function otomatikSonrakiAdimaGec(){
+
+    if(otomatikGecisYapiliyor || !oynuyor) return;
+    otomatikGecisYapiliyor = true;
+
+    try{
+        const bitenSure = Number(audioSure || SURE);
+        const bitenAyet = Number(aktifAyet || 0);
+        const mevcutIndex = SAYFA_AYETLERI.findIndex(x =>
+            x.sure === bitenSure && x.ayet === bitenAyet
+        );
+        const sonrakiAyet = mevcutIndex >= 0
+            ? SAYFA_AYETLERI[mevcutIndex + 1]
+            : null;
+
+        if(timer) cancelAnimationFrame(timer);
+        if(audio) audio.pause();
+        temizle();
+
+        if(sonrakiAyet){
+            SURE = sonrakiAyet.sure;
+            if(sureSec) sureSec.value = String(SURE);
+            if(SURE !== bitenSure){
+                audio = null;
+                audioSure = null;
+                tumZamanlar = [];
+                zamanlar = [];
+            }
+            sayfaDegisti = false;
+            await ayeteGit(sonrakiAyet.ayet, sonrakiAyet.sure);
+            return;
+        }
+
+        if(SAYFA < MAX_SAYFA){
+            SAYFA++;
+            sayfaDegisti = true;
+            konumuKaydet();
+            await mushafYukle();
+            const ilk = SAYFA_AYETLERI[0];
+            if(ilk){
+                await ayeteGit(ilk.ayet, ilk.sure);
+            }
+            window.scrollTo({top:0, behavior:'smooth'});
+            return;
+        }
+
+        oynuyor = false;
+        durum.textContent = 'Hatim tamamlandı.';
+    }catch(e){
+        console.error('Otomatik devam hatası:', e);
+        oynuyor = false;
+        durum.textContent = 'Sonraki sayfaya geçilemedi.';
+    }finally{
+        otomatikGecisYapiliyor = false;
+    }
+}
+
 
 function takipEt(){
 
@@ -2490,7 +2720,7 @@ function takipEt(){
 
             const hedefler =
             document.querySelectorAll(
-                `.ayet[data-ayet="${aktif.ayet}"]`
+                `.ayet[data-sure="${SURE}"][data-ayet="${aktif.ayet}"]`
             );
 
 
@@ -2509,7 +2739,7 @@ function takipEt(){
 
                 const mealHedefler =
                 mealSayfa.querySelectorAll(
-                    `.meal-ayet[data-ayet="${aktif.ayet}"]`
+                    `.meal-ayet[data-sure="${SURE}"][data-ayet="${aktif.ayet}"]`
                 );
 
                 mealHedefler.forEach(hedef=>{
@@ -2543,6 +2773,21 @@ function takipEt(){
     }
 
 
+    /*
+     * Bazı MP3 dosyalarında tarayıcı "ended" olayını zamanlamanın
+     * bittiği anda güvenilir biçimde vermeyebilir. Sayfadaki son ayetin
+     * zamanlaması bittiğinde geçişi burada da garanti ediyoruz.
+     */
+    if(oynuyor && zamanlar.length && !otomatikGecisYapiliyor){
+        const sonZaman = zamanlar[zamanlar.length - 1];
+        if(sonZaman &&
+           Number(aktifAyet || 0) === Number(sonZaman.ayet) &&
+           audio.currentTime >= Number(sonZaman.bitis)){
+            otomatikSonrakiAdimaGec();
+            return;
+        }
+    }
+
     timer =
     requestAnimationFrame(
         takipEt
@@ -2555,9 +2800,27 @@ function takipEt(){
    TIKLANAN AYETE GİT
    ========================================================= */
 
-async function ayeteGit(ayetNo){
+async function ayeteGit(ayetNo, sureNo=SURE){
 
     try{
+
+        sureNo = Number(sureNo) || SURE;
+
+        /* Sayfada birden fazla sûre varsa tıklanan ayetin
+         * kendi sûresinin sesini ve zamanlamasını kullan. */
+        if(sureNo !== SURE){
+            if(audio) audio.pause();
+            oynuyor=false;
+            if(timer) cancelAnimationFrame(timer);
+            temizle();
+            audio=null;
+            tumZamanlar=[];
+            zamanlar=[];
+            SURE=sureNo;
+            if(typeof sureSec !== "undefined" && sureSec)
+                sureSec.value=String(SURE);
+            sayfaDegisti=true;
+        }
 
         sesHazirla();
 
@@ -2885,6 +3148,10 @@ sureSec.addEventListener("change", async ()=>{
     sayfaDegisti=true;
 
     SURE=yeniSure;
+    // Sûre seçiminden gelen ilk sayfa yüklemesinde seçilen sûreyi koru.
+    // Böylece ortak başlangıç sayfalarında (ör. Müddessir/Müzzemmil)
+    // sayfanın ilk sûresi seçimi ezmez.
+    secilenSureyiKoru=true;
     // Sûre seçildiğinde sûre başlangıç sayfasına git.
     SAYFA=bilgi[2];
     konumuKaydet();
@@ -2997,6 +3264,9 @@ document.querySelectorAll(".mobil-kontrol-bar [data-action]").forEach(btn=>{
 onceki.addEventListener("click", async ()=>{
     if(SAYFA <= MIN_SAYFA) return;
 
+    /* Okuma devam ediyorsa yeni sayfaya otomatik devam et. */
+    const devamEt = oynuyor;
+
     if(audio) audio.pause();
     oynuyor=false;
 
@@ -3008,10 +3278,18 @@ onceki.addEventListener("click", async ()=>{
     sayfaDegisti = true;
     konumuKaydet();
     await mushafYukle();
+
+    if(devamEt){
+        const ilk = SAYFA_AYETLERI[0];
+        if(ilk) await ayeteGit(ilk.ayet, ilk.sure);
+    }
 });
 
 sonraki.addEventListener("click", async ()=>{
     if(SAYFA >= MAX_SAYFA) return;
+
+    /* Okuma devam ediyorsa yeni sayfaya otomatik devam et. */
+    const devamEt = oynuyor;
 
     if(audio) audio.pause();
     oynuyor=false;
@@ -3024,6 +3302,11 @@ sonraki.addEventListener("click", async ()=>{
     sayfaDegisti = true;
     konumuKaydet();
     await mushafYukle();
+
+    if(devamEt){
+        const ilk = SAYFA_AYETLERI[0];
+        if(ilk) await ayeteGit(ilk.ayet, ilk.sure);
+    }
 });
 
 /* =========================================================
@@ -3032,8 +3315,7 @@ sonraki.addEventListener("click", async ()=>{
 
 varsayilanSayfayiYukle();
 sureSeciminiDoldur();
-sureSec.value = "1";
-SURE = 1;
+sureSec.value = String(SURE);
 geceModunuUygula();
 favorileriGoster();
 
