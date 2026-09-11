@@ -30,10 +30,18 @@ body{
 }
 
 #sayfaNo{
-    color:#6ee28a;
-    font-size:26px;
-    font-weight:700;
+    color:#173b2d;
+    font-size:13px;
+    font-weight:900;
     line-height:1;
+    position:absolute;
+    top:5px;
+    right:7px;
+    z-index:1101;
+    background:#fff;
+    padding:6px 9px;
+    border-radius:9px;
+    box-shadow:0 2px 6px rgba(0,0,0,.12);
 }
 
 .kontroller{
@@ -390,11 +398,17 @@ body.gorunum-meal #sayfa{
 }
 
 .sayfalar{
-    width:min(1840px,100%);
-    display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    width:min(1100px,100%);
+    display:flex;
+    flex-direction:column;
     gap:24px;
-    align-items:start;
+    align-items:stretch;
+}
+.sayfalar #sayfa{
+    order:1;
+}
+.sayfalar #mealSayfa{
+    order:2;
 }
 
 .sayfa{
@@ -726,7 +740,7 @@ body.gece-modu .favori-satir{background:#303630}
         flex-wrap:wrap;
     }
 
-    .okuyucu-kontrol:not(.kompakt-secim){
+    .okuyucu-kontrol:not(.kompakt-secim):not(.meal-kontrol){
         width:100%;
         justify-content:center;
     }
@@ -1052,6 +1066,312 @@ body.gece-modu .favori-satir{background:#303630}
     .ezber-satir .ezber-baslat-alani{grid-column:1/-1}
 }
 
+
+/* TELEFON: TÜM ÜST KONTROLLERİ KOMPAKT TUT */
+@media (max-width:700px){
+    .kontroller{
+        gap:5px !important;
+        padding:7px 5px !important;
+        justify-content:center !important;
+    }
+
+    .kontroller > button,
+    .kontroller > .sure-kontrol,
+    .kontroller > .okuyucu-kontrol,
+    .kontroller > .ek-kontrol-alani,
+    .kontroller > .ezber-toggle,
+    .kontroller > .gorunum-kontrol{
+        flex:0 0 auto !important;
+        width:auto !important;
+        min-width:0 !important;
+        max-width:none !important;
+    }
+
+    .kontroller > button,
+    .kontroller .ezber-toggle,
+    .kontroller .gorunum-btn{
+        padding:8px 9px !important;
+        font-size:11px !important;
+        border-radius:10px !important;
+        white-space:nowrap;
+    }
+
+    .sure-kontrol,
+    .okuyucu-kontrol.kompakt-secim,
+    .dil-kontrol,
+    .meal-secim-kontrol{
+        width:82px !important;
+        min-width:82px !important;
+        max-width:82px !important;
+        height:38px !important;
+        flex:0 0 82px !important;
+        padding:3px !important;
+        border-radius:11px !important;
+    }
+
+    .secim-etiket,
+    .sure-etiket{
+        min-height:30px !important;
+        height:30px !important;
+        padding:0 3px !important;
+        font-size:10px !important;
+        border-radius:8px !important;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .sure-kontrol #sureSec,
+    .okuyucu-kontrol.kompakt-secim #okuyucuSec,
+    .dil-kontrol #dilSec,
+    .meal-secim-kontrol #mealSec{
+        width:100% !important;
+        min-width:0 !important;
+        max-width:none !important;
+    }
+
+    .ek-kontrol-alani{
+        width:auto !important;
+        gap:5px !important;
+    }
+
+    #sayfayaGit,#favorilerBtn,#geceModuBtn{
+        min-width:0 !important;
+        flex:0 0 auto !important;
+    }
+
+    .durum{
+        flex:1 1 100% !important;
+        width:100% !important;
+        order:20 !important;
+    }
+}
+
+/* TELEFON SON KOMPAKT OVERRIDE - DIL/MEAL DAHIL */
+@media (max-width:700px){
+  .kontroller > .okuyucu-kontrol.dil-kontrol,
+  .kontroller > .okuyucu-kontrol.meal-secim-kontrol,
+  .kontroller > .okuyucu-kontrol.kompakt-secim,
+  .kontroller > .sure-kontrol{
+    width:82px !important;
+    min-width:82px !important;
+    max-width:82px !important;
+    flex:0 0 82px !important;
+    height:38px !important;
+    padding:3px !important;
+  }
+
+  .kontroller > .okuyucu-kontrol.dil-kontrol .secim-etiket,
+  .kontroller > .okuyucu-kontrol.meal-secim-kontrol .secim-etiket,
+  .kontroller > .okuyucu-kontrol.kompakt-secim .secim-etiket,
+  .kontroller > .sure-kontrol .sure-etiket{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    height:30px !important;
+    min-height:30px !important;
+    padding:0 3px !important;
+    font-size:10px !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  .kontroller > .okuyucu-kontrol.dil-kontrol #dilSec,
+  .kontroller > .okuyucu-kontrol.meal-secim-kontrol #mealSec,
+  .kontroller > .okuyucu-kontrol.kompakt-secim #okuyucuSec,
+  .kontroller > .sure-kontrol #sureSec{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+
+  .kontroller > button,
+  .kontroller > .ek-kontrol-alani > button,
+  .kontroller > .ezber-toggle,
+  .kontroller > .gorunum-kontrol .gorunum-btn{
+    width:82px !important;
+    min-width:82px !important;
+    max-width:82px !important;
+    flex:0 0 82px !important;
+    min-height:38px !important;
+    padding:7px 5px !important;
+    font-size:10px !important;
+    white-space:nowrap !important;
+  }
+
+  .kontroller > .ek-kontrol-alani{
+    width:auto !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    flex:0 0 auto !important;
+    gap:5px !important;
+  }
+
+  .kontroller > .durum{
+    flex:1 1 100% !important;
+    width:100% !important;
+  }
+}
+
+
+/* ÜST MENÜYÜ GÖSTER / GİZLE */
+
+/* =========================================================
+   TAM SAYFA / TAKİP ET
+   Telefonda Kur'an sayfasının tamamını tek ekrana sığdırır.
+   ========================================================= */
+body.tam-sayfa-modu{
+    overflow:hidden;
+}
+
+body.tam-sayfa-modu .mushaf-alani{
+    overflow:hidden;
+}
+
+body.tam-sayfa-modu .sayfalar{
+    overflow:hidden;
+}
+
+body.tam-sayfa-modu .sayfalar .sayfa{
+    transform-origin:top center;
+    margin-left:auto;
+    margin-right:auto;
+    overflow:hidden;
+}
+
+body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
+    transform:scale(var(--tam-sayfa-olcek,1));
+    transform-origin:top center;
+}
+
+#tamSayfaBtn{
+    background:linear-gradient(135deg,#6a4c93,#8a67b6);
+}
+
+#tamSayfaBtn.tam-aktif{
+    background:linear-gradient(135deg,#197447,#2b9a61);
+}
+
+#menuToggle{
+    display:block;
+    width:max-content;
+    margin:0;
+    padding:8px 14px;
+    border-radius:10px;
+    background:#173b2d;
+    color:#fff;
+    border:1px solid rgba(255,255,255,.25);
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+    position:fixed !important;
+    top:58px !important;
+    left:7px !important;
+    z-index:99999 !important;
+}
+.kontroller.menuler-gizli{
+    display:none !important;
+}
+@media(max-width:700px){
+    #menuToggle{
+        margin:0;
+        padding:7px 13px;
+        font-size:11px;
+        top:58px !important;
+        left:5px !important;
+    }
+    #sayfaNo{
+        position:fixed !important;
+        top:58px !important;
+        right:5px !important;
+        font-size:12px;
+        padding:5px 8px;
+        z-index:99999 !important;
+    }
+}
+
+
+/* Menü düğmesi sesli takip sırasında da ekranın üzerinde sabit kalır. */
+#menuToggle{
+    pointer-events:auto !important;
+    visibility:visible !important;
+}
+
+
+/* Menü ve sayfa numarası sesli takipte de aynı hizada sabit kalır. */
+@media(max-width:700px){
+    #menuToggle{
+        position:fixed !important;
+        top:58px !important;
+        left:5px !important;
+    }
+    #sayfaNo{
+        position:fixed !important;
+        top:58px !important;
+        right:5px !important;
+        z-index:99999 !important;
+    }
+}
+
+
+@media(max-width:700px){
+    #menuToggle{
+        position:fixed !important;
+        top:58px !important;
+        left:5px !important;
+        z-index:2147483647 !important;
+        pointer-events:auto !important;
+        touch-action:manipulation !important;
+    }
+    #sayfaNo{
+        position:fixed !important;
+        top:58px !important;
+        right:5px !important;
+        z-index:2147483647 !important;
+    }
+}
+
+
+/* TELEFON: üst kontroller sistem durum çubuğunun altında başlasın */
+@media(max-width:700px){
+    #menuToggle{
+        top:58px !important;
+        left:5px !important;
+        z-index:2147483647 !important;
+        pointer-events:auto !important;
+        touch-action:manipulation !important;
+    }
+
+    #sayfaNo{
+        top:58px !important;
+        right:5px !important;
+        z-index:2147483647 !important;
+    }
+
+    /* Menü açıldığında tüm kontrol grubu menü düğmesinin altında kalsın. */
+    .kontroller{
+        position:relative !important;
+        z-index:2000 !important;
+        margin-top:42px !important;
+        padding-top:12px !important;
+    }
+
+    /* Menü butonu ile ilk kontrol arasında dokunulabilir boşluk. */
+    .kontroller > button:first-child{
+        margin-top:8px !important;
+    }
+
+    /* Sûre/Okuyucu ve diğer seçimler ekranın sistem çubuğuna yaklaşmasın. */
+    .kontroller .sure-kontrol,
+    .kontroller .okuyucu-kontrol,
+    .kontroller .gorunum-kontrol,
+    .kontroller .ek-kontrol-alani,
+    .kontroller .ezber-toggle{
+        position:relative;
+        z-index:2001;
+    }
+}
+
 </style>
 </head>
 
@@ -1062,11 +1382,13 @@ body.gece-modu .favori-satir{background:#303630}
     <div id="sayfaNo">1</div>
 </header>
 
-<div class="kontroller">
+<button type="button" id="menuToggle" aria-expanded="false">☰ Menü</button>
+
+<div class="kontroller menuler-gizli">
 
     <button id="oynat" style="display:none">▶ Oynat</button>
-    <button id="duraklat">⏸ Duraklat</button>
-    <button id="durdur">⏹ Durdur</button>
+    <button id="duraklat" style="display:none">⏸ Duraklat</button>
+    <button id="durdur" style="display:none">⏹ Durdur</button>
     <button id="onceki">◀ Önceki</button>
     <button id="sonraki">Sonraki ▶</button>
 
@@ -1099,11 +1421,11 @@ body.gece-modu .favori-satir{background:#303630}
     <div class="gorunum-kontrol">
         <button type="button" class="gorunum-btn" id="gorunumBtn">👁 Görünüm</button>
         <div class="gorunum-panel" id="gorunumPanel">
-            <button type="button" data-gorunum="ikili">📖 Arapça + Meal</button>
             <button type="button" data-gorunum="arapca">📜 Sadece Arapça</button>
             <button type="button" data-gorunum="meal">📝 Sadece Meal</button>
         </div>
     </div>
+    <button type="button" id="tamSayfaBtn">📄 Tam Sayfa</button>
 
     <div class="ek-kontrol-alani">
         <button id="sayfayaGit">🔢 Sayfaya Git</button>
@@ -1376,6 +1698,39 @@ const sayfaGitPanel = document.getElementById("sayfaGitPanel");
 const sayfaInput = document.getElementById("sayfaInput");
 const sayfaGitTamam = document.getElementById("sayfaGitTamam");
 const sayfaGitIptal = document.getElementById("sayfaGitIptal");
+const menuToggle = document.getElementById("menuToggle");
+const kontroller = document.querySelector(".kontroller");
+
+function menuyuGizle(){
+    if(!kontroller || !menuToggle) return;
+    kontroller.classList.add("menuler-gizli");
+    menuToggle.setAttribute("aria-expanded", "false");
+    menuToggle.textContent = "☰ Menü";
+}
+
+function menuyuAcKapat(){
+    if(!kontroller || !menuToggle) return;
+    const gizli = kontroller.classList.toggle("menuler-gizli");
+    menuToggle.setAttribute("aria-expanded", String(!gizli));
+    menuToggle.textContent = gizli ? "☰ Menü" : "✕ Menüyü Gizle";
+}
+
+let menuTouchHandled = false;
+
+menuToggle.addEventListener("click", (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    if(menuTouchHandled) return;
+    menuyuAcKapat();
+}, {passive:false});
+
+menuToggle.addEventListener("touchend", (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    menuTouchHandled = true;
+    menuyuAcKapat();
+    setTimeout(()=>{ menuTouchHandled = false; }, 450);
+}, {passive:false});
 
 let favoriAyetler = JSON.parse(localStorage.getItem("kuranFavoriAyetler") || "[]");
 
@@ -1433,6 +1788,106 @@ function favorileriGoster(){
     });
 }
 
+
+let tamSayfaModu = false;
+
+function tamSayfayiUygula(kaydet=true){
+    document.body.classList.toggle("tam-sayfa-modu", tamSayfaModu);
+
+    if(tamSayfaBtn){
+        tamSayfaBtn.classList.toggle("tam-aktif", tamSayfaModu);
+        tamSayfaBtn.textContent = tamSayfaModu
+            ? "↩ Takip Et"
+            : "📄 Tam Sayfa";
+    }
+
+    tamSayfayiOlcekle();
+
+    if(kaydet){
+        localStorage.setItem("kuranTamSayfa", tamSayfaModu ? "1" : "0");
+    }
+}
+
+function tamSayfayiOlcekle(){
+    const sayfalar = document.querySelector(".sayfalar");
+    if(!sayfalar) return;
+
+    const sayfa = document.body.classList.contains("gorunum-meal")
+        ? document.getElementById("mealSayfa")
+        : document.getElementById("sayfa");
+
+    if(!sayfa) return;
+
+    sayfa.classList.remove("tam-sayfa-olcekli");
+    sayfalar.style.height = "";
+
+    if(!tamSayfaModu){
+        sayfa.style.width = "";
+        sayfa.style.maxWidth = "";
+        return;
+    }
+
+    // Tam sayfa modunda sayfayı kontrollü biçimde genişlet.
+    // Aşırı genişletme sağa kayma ve dengesiz boşluk oluşturabiliyor.
+    const alanGenislikIlk = Math.max(
+        sayfalar.clientWidth || window.innerWidth - 14,
+        1
+    );
+
+    const yatayGenisletme = Math.min(
+        1.18,
+        Math.max(1.0, (window.innerHeight / Math.max(window.innerWidth,1)) / 2.35)
+    );
+
+    sayfa.style.width = (100 * yatayGenisletme) + "%";
+    sayfa.style.maxWidth = "none";
+    sayfa.style.marginLeft = "auto";
+    sayfa.style.marginRight = "auto";
+
+    // Yeni genişliğe göre içerik yeniden satırlansın.
+    void sayfa.offsetHeight;
+
+    // DOM'un doğal yüksekliğini ölç.
+    const dogalYukseklik = Math.max(sayfa.scrollHeight, sayfa.offsetHeight, 1);
+
+    // Üst başlık + menü + alt oynatıcı için kullanılabilir alanı hesapla.
+    const ust = document.querySelector(".ust");
+    const menu = document.getElementById("menuToggle");
+    const altBar = document.querySelector(".mobil-kontrol-bar");
+
+    const ustYukseklik = ust ? ust.getBoundingClientRect().height : 0;
+    const menuYukseklik = menu ? menu.getBoundingClientRect().height + 6 : 0;
+    const altYukseklik = (window.innerWidth <= 700 && altBar)
+        ? altBar.getBoundingClientRect().height
+        : 0;
+
+    const kullanilabilir = Math.max(
+        window.innerHeight - ustYukseklik - menuYukseklik - altYukseklik - 8,
+        180
+    );
+
+    // Genişlik ve yükseklik sınırlarının ikisini de dikkate al.
+    const dogalGenislik = Math.max(sayfa.scrollWidth, sayfa.offsetWidth, 1);
+    const alanGenislik = Math.max(
+        sayfalar.clientWidth || window.innerWidth - 14,
+        1
+    );
+
+    const olcekY = kullanilabilir / dogalYukseklik;
+    const olcekX = alanGenislik / dogalGenislik;
+    const olcek = Math.min(olcekX, olcekY, 1);
+
+    sayfa.style.setProperty("--tam-sayfa-olcek", String(olcek));
+    sayfa.classList.add("tam-sayfa-olcekli");
+
+    // Görsel genişlik alanını da ölçeklenmiş yüksekliğe göre ayarla.
+    // Transform merkezden uygulandığı için iki yandaki boşluk azalır.
+    sayfalar.style.height = Math.ceil(dogalYukseklik * olcek) + "px";
+
+    // Transform akış yüksekliğini değiştirmediği için wrapper'ı
+    // ölçeklenmiş yüksekliğe göre ayarla.
+}
+
 function gorunumuUygula(gorunum, kaydet=true){
     const secenekler=["ikili","arapca","meal"];
     if(!secenekler.includes(gorunum)) gorunum="ikili";
@@ -1445,6 +1900,7 @@ function gorunumuUygula(gorunum, kaydet=true){
     });
 
     if(kaydet) localStorage.setItem("kuranGorunum",gorunum);
+    if(tamSayfaModu) requestAnimationFrame(tamSayfayiOlcekle);
 }
 
 function geceModunuUygula(){
@@ -1476,6 +1932,8 @@ document.getElementById("mealSec");
 
 const gorunumBtn = document.getElementById("gorunumBtn");
 const gorunumPanel = document.getElementById("gorunumPanel");
+const tamSayfaBtn = document.getElementById("tamSayfaBtn");
+
 
 
 /* =========================================================
@@ -2398,6 +2856,10 @@ async function mushafYukle(){
         durum.textContent =
         "Abdulbasit hazır";
 
+        if(tamSayfaModu){
+            requestAnimationFrame(tamSayfayiOlcekle);
+        }
+
 
     }catch(e){
 
@@ -3058,8 +3520,11 @@ oynat.addEventListener(
             }
 
 
-            await audio.play();
+            // Oynat düğmesine basıldığı anda üst menüyü kapat.
+            // Menü düğmesi ekranda kalır ve istenirse tekrar açılabilir.
+            menuyuGizle();
 
+            await audio.play();
 
             oynuyor=true;
 
@@ -3332,6 +3797,18 @@ geceModuBtn.addEventListener("click",()=>{
     geceModunuUygula();
 });
 
+tamSayfaBtn.addEventListener("click", ()=>{
+    tamSayfaModu = !tamSayfaModu;
+    tamSayfayiUygula(true);
+    if(gorunumPanel) gorunumPanel.classList.remove("acik");
+});
+
+window.addEventListener("resize", ()=>{
+    if(tamSayfaModu){
+        requestAnimationFrame(tamSayfayiOlcekle);
+    }
+});
+
 gorunumBtn.addEventListener("click", e=>{
     e.stopPropagation();
     gorunumPanel.classList.toggle("acik");
@@ -3350,6 +3827,8 @@ document.addEventListener("click", e=>{
 });
 
 gorunumuUygula(localStorage.getItem("kuranGorunum") || "ikili", false);
+tamSayfayiUygula(false);
+
 
 document.querySelectorAll(".mobil-kontrol-bar [data-action]").forEach(btn=>{
     btn.addEventListener("click",()=>{
