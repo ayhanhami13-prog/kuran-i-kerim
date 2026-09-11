@@ -324,6 +324,67 @@ body.gece-modu #sureSec{color:#f1e8cf}
     font-size:15px;
 }
 
+/* Görünüm seçimi: Arapça / Meal / İkili */
+.gorunum-kontrol{
+    position:relative;
+    flex:0 0 auto;
+}
+.gorunum-btn{
+    min-width:108px;
+    background:linear-gradient(135deg,#4a5d70,#30485c);
+}
+.gorunum-btn:hover{
+    background:linear-gradient(135deg,#587087,#3b566d);
+}
+.gorunum-panel{
+    display:none;
+    position:absolute;
+    top:calc(100% + 8px);
+    right:0;
+    z-index:1200;
+    width:210px;
+    padding:10px;
+    background:#fff;
+    border:2px solid #78909c;
+    border-radius:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.22);
+}
+.gorunum-panel.acik{display:flex;flex-direction:column;gap:7px}
+.gorunum-panel button{
+    width:100%;
+    min-height:40px;
+    padding:8px 10px;
+    border-radius:10px;
+    background:#f3f7f5;
+    color:#173b2d;
+    border:1px solid #c5d6cc;
+    box-shadow:none;
+    font-size:13px;
+    font-weight:800;
+    text-align:left;
+}
+.gorunum-panel button:hover{
+    background:#e6f1eb;
+    transform:none;
+    box-shadow:none;
+}
+.gorunum-panel button.secili{
+    background:linear-gradient(135deg,#2f8f5b,#176b3f);
+    color:#fff;
+    border-color:#145c37;
+}
+
+/* Tek sütun görünümünde seçilen taraf tam genişlik kullanır. */
+body.gorunum-arapca .sayfalar,
+body.gorunum-meal .sayfalar{
+    grid-template-columns:1fr;
+    max-width:920px;
+}
+body.gorunum-arapca #mealSayfa,
+body.gorunum-meal #sayfa{
+    display:none;
+}
+
 .durum{
     min-width:280px;
     text-align:center;
@@ -828,6 +889,17 @@ body.gece-modu .favori-satir{background:#303630}
 
 /* Küçük ekranlarda da tek tek kompakt butonlar halinde kalırlar. */
 @media(max-width:700px){
+    .gorunum-kontrol{order:19}
+    .gorunum-panel{
+        position:fixed;
+        top:108px;
+        right:10px;
+        left:10px;
+        width:auto;
+        max-width:none;
+    }
+    .gorunum-btn{min-width:110px}
+
     .kontroller{
         gap:7px;
         padding:8px 6px;
@@ -1035,6 +1107,15 @@ body.gece-modu .favori-satir{background:#303630}
         <select id="mealSec">
             <option value="52">Elmalılı Hamdi Yazır</option>
         </select>
+    </div>
+
+    <div class="gorunum-kontrol">
+        <button type="button" class="gorunum-btn" id="gorunumBtn">👁 Görünüm</button>
+        <div class="gorunum-panel" id="gorunumPanel">
+            <button type="button" data-gorunum="ikili">📖 Arapça + Meal</button>
+            <button type="button" data-gorunum="arapca">📜 Sadece Arapça</button>
+            <button type="button" data-gorunum="meal">📝 Sadece Meal</button>
+        </div>
     </div>
 
     <div class="ek-kontrol-alani">
@@ -1365,6 +1446,20 @@ function favorileriGoster(){
     });
 }
 
+function gorunumuUygula(gorunum, kaydet=true){
+    const secenekler=["ikili","arapca","meal"];
+    if(!secenekler.includes(gorunum)) gorunum="ikili";
+
+    document.body.classList.remove("gorunum-ikili","gorunum-arapca","gorunum-meal");
+    document.body.classList.add("gorunum-"+gorunum);
+
+    document.querySelectorAll("[data-gorunum]").forEach(btn=>{
+        btn.classList.toggle("secili", btn.dataset.gorunum===gorunum);
+    });
+
+    if(kaydet) localStorage.setItem("kuranGorunum",gorunum);
+}
+
 function geceModunuUygula(){
     const acik=localStorage.getItem("kuranGeceModu")==="1";
     document.body.classList.toggle("gece-modu",acik);
@@ -1391,6 +1486,9 @@ document.getElementById("dilSec");
 
 const mealSec =
 document.getElementById("mealSec");
+
+const gorunumBtn = document.getElementById("gorunumBtn");
+const gorunumPanel = document.getElementById("gorunumPanel");
 
 
 /* =========================================================
@@ -3246,6 +3344,25 @@ geceModuBtn.addEventListener("click",()=>{
     localStorage.setItem("kuranGeceModu",acik?"1":"0");
     geceModunuUygula();
 });
+
+gorunumBtn.addEventListener("click", e=>{
+    e.stopPropagation();
+    gorunumPanel.classList.toggle("acik");
+});
+
+gorunumPanel.querySelectorAll("[data-gorunum]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+        gorunumuUygula(btn.dataset.gorunum);
+        gorunumPanel.classList.remove("acik");
+    });
+});
+
+document.addEventListener("click", e=>{
+    if(!e.target.closest(".gorunum-kontrol"))
+        gorunumPanel.classList.remove("acik");
+});
+
+gorunumuUygula(localStorage.getItem("kuranGorunum") || "ikili", false);
 
 document.querySelectorAll(".mobil-kontrol-bar [data-action]").forEach(btn=>{
     btn.addEventListener("click",()=>{
