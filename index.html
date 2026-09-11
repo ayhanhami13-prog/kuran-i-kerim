@@ -272,14 +272,6 @@ body.gece-modu #sureSec{color:#f1e8cf}
     background:linear-gradient(135deg,#d39a25,#a96d0e);
     border:1px solid #8f5c09;
 }
-#dilSec{
-    min-width:145px;
-    max-width:260px;
-}
-#mealSec{
-    min-width:250px;
-    max-width:min(430px,42vw);
-}
 #dilSec,#mealSec{
     border:0;
     background:transparent;
@@ -762,11 +754,6 @@ body.gece-modu .favori-satir{background:#303630}
         font-size:17px;
         line-height:1.7;
     }
-    #dilSec,#mealSec{
-        min-width:170px;
-        max-width:100%;
-        width:100%;
-    }
 }
 
 /* =========================================================
@@ -1077,7 +1064,7 @@ body.gece-modu .favori-satir{background:#303630}
 
 <div class="kontroller">
 
-    <button id="oynat">▶ Oynat</button>
+    <button id="oynat" style="display:none">▶ Oynat</button>
     <button id="duraklat">⏸ Duraklat</button>
     <button id="durdur">⏹ Durdur</button>
     <button id="onceki">◀ Önceki</button>
