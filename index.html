@@ -3164,8 +3164,8 @@ async function otomatikSonrakiAdimaGec(){
                 temizle();
                 SURE = sonrakiSureNo;
                 if(sureSec) sureSec.value = String(SURE);
-                audio = null;
-                audioSure = null;
+                /* Mevcut Audio nesnesini KESME; otomatik geçişte aynı
+                 * kullanıcı başlatmalı oynatıcıyı koru. */
                 tumZamanlar = [];
                 zamanlar = [];
                 oynuyor = true;
@@ -3210,7 +3210,6 @@ async function otomatikSonrakiAdimaGec(){
                  * Audio nesnesini silmiyoruz. Aynı oynatıcı yeni sûreye
                  * ayeteGit() içinde yeni src ile geçirilecek.
                  */
-                audioSure = bitenSure;
                 tumZamanlar = [];
                 zamanlar = [];
             }
