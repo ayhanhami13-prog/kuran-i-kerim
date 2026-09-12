@@ -1736,6 +1736,15 @@ let favoriAyetler = JSON.parse(localStorage.getItem("kuranFavoriAyetler") || "[]
 
 function konumuKaydet(){
     localStorage.setItem("kuranSonSayfa", String(SAYFA));
+    localStorage.removeItem("kuranSonSure");
+    localStorage.removeItem("kuranSonAyet");
+}
+
+function okumaKonumunuKaydet(sureNo=SURE, ayetNo=aktifAyet){
+    if(!Number.isFinite(Number(sureNo)) || !Number.isFinite(Number(ayetNo))) return;
+    localStorage.setItem("kuranSonSayfa", String(SAYFA));
+    localStorage.setItem("kuranSonSure", String(Number(sureNo)));
+    localStorage.setItem("kuranSonAyet", String(Number(ayetNo)));
 }
 
 function favoriMi(ayet){
@@ -1909,13 +1918,23 @@ function geceModunuUygula(){
     geceModuBtn.textContent=acik ? "☀️ Gündüz Modu" : "🌙 Gece Modu";
 }
 
+let devamKonumuHazir = false;
+
 function varsayilanSayfayiYukle(){
-    // İlk kullanımda 1. sayfa açılır; daha önce okuyan kullanıcı
-    // uygulamayı yeniden açtığında kaldığı sayfadan devam eder.
     const kayit = Number(localStorage.getItem("kuranSonSayfa"));
+    const kayitSure = Number(localStorage.getItem("kuranSonSure"));
+    const kayitAyet = Number(localStorage.getItem("kuranSonAyet"));
+
     SAYFA = (Number.isInteger(kayit) && kayit >= MIN_SAYFA && kayit <= MAX_SAYFA) ? kayit : 1;
-    // Sûre, sayfa yüklendiğinde o sayfadaki ayetlerden otomatik belirlenir.
-    SURE = 1;
+    devamKonumuHazir = Number.isInteger(kayitSure) && kayitSure >= 1 && kayitSure <= 114 &&
+                       Number.isInteger(kayitAyet) && kayitAyet >= 1;
+
+    if(devamKonumuHazir){
+        SURE = kayitSure;
+        secilenSureyiKoru = true;
+    }else{
+        SURE = 1;
+    }
     sayfaDegisti = true;
 }
 
@@ -2176,10 +2195,11 @@ async function okuyuculariYukle(){
             okuyucuSec.appendChild(option);
         }
 
+        const kayitliReadId = Number(localStorage.getItem("kuranOkuyucuReadId"));
         const varsayilan =
-        OKUYUCULAR.find(
-            x=>x.readId===DEFAULT_READ_ID
-        ) || OKUYUCULAR[0];
+        OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
+        OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
+        OKUYUCULAR[0];
 
         OKUYUCU=varsayilan;
 
@@ -2201,6 +2221,7 @@ async function okuyuculariYukle(){
         '<option value="5">AbdulBaset AbdulSamad</option>';
 
         okuyucuSec.value="5";
+        localStorage.setItem("kuranOkuyucuReadId", "5");
 
         OKUYUCU={
             readId:DEFAULT_READ_ID,
@@ -2939,7 +2960,7 @@ function sesHazirla(){
                     tumZamanlar = [];
                     zamanlar = [];
                     aktifAyet = null;
-                    await ayeteGit(sonrakiAyet.ayet, sonrakiAyet.sure);
+                    await ayeteGit(sonrakiAyet.ayet, sonrakiAyet.sure, true);
                     return;
                 }
 
@@ -2952,7 +2973,7 @@ function sesHazirla(){
 
                     const ilk = SAYFA_AYETLERI[0];
                     if(ilk){
-                        await ayeteGit(ilk.ayet, ilk.sure);
+                        await ayeteGit(ilk.ayet, ilk.sure, true);
                     }
                     window.scrollTo({top:0, behavior:"smooth"});
                     return;
@@ -3187,7 +3208,7 @@ async function otomatikSonrakiAdimaGec(){
                 zamanlar = [];
             }
             sayfaDegisti = false;
-            await ayeteGit(sonrakiAyet.ayet, sonrakiAyet.sure);
+            await ayeteGit(sonrakiAyet.ayet, sonrakiAyet.sure, true);
             return;
         }
 
@@ -3198,7 +3219,7 @@ async function otomatikSonrakiAdimaGec(){
             await mushafYukle();
             const ilk = SAYFA_AYETLERI[0];
             if(ilk){
-                await ayeteGit(ilk.ayet, ilk.sure);
+                await ayeteGit(ilk.ayet, ilk.sure, true);
             }
             window.scrollTo({top:0, behavior:'smooth'});
             return;
@@ -3300,10 +3321,17 @@ function takipEt(){
                  * ilk parçasını ortalasın.
                  */
 
-                hedefler[0].scrollIntoView({
-                    behavior:"smooth",
-                    block:"center"
-                });
+                if(document.body.classList.contains("gorunum-meal") && mealHedefler.length){
+                    mealHedefler[0].scrollIntoView({
+                        behavior:"smooth",
+                        block:"center"
+                    });
+                }else{
+                    hedefler[0].scrollIntoView({
+                        behavior:"smooth",
+                        block:"center"
+                    });
+                }
 
 
                 durum.textContent =
@@ -3312,6 +3340,8 @@ function takipEt(){
 
                 aktifAyet =
                 aktif.ayet;
+
+                okumaKonumunuKaydet(SURE, aktif.ayet);
 
             }
 
@@ -3347,17 +3377,18 @@ function takipEt(){
    TIKLANAN AYETE GİT
    ========================================================= */
 
-async function ayeteGit(ayetNo, sureNo=SURE){
+async function ayeteGit(ayetNo, sureNo=SURE, otomatikDevam=false){
 
     try{
 
         sureNo = Number(sureNo) || SURE;
+        const okumayaDevamEdiyordu = !!oynuyor || !!otomatikDevam;
 
         /* Sayfada birden fazla sûre varsa tıklanan ayetin
          * kendi sûresinin sesini ve zamanlamasını kullan. */
         if(sureNo !== SURE){
             if(audio) audio.pause();
-            oynuyor=false;
+            if(!okumayaDevamEdiyordu) oynuyor=false;
             if(timer) cancelAnimationFrame(timer);
             temizle();
             audio=null;
@@ -3416,6 +3447,8 @@ async function ayeteGit(ayetNo, sureNo=SURE){
         audio.currentTime = hedef.baslangic;
         aktifAyet = null;
         sayfaDegisti = false;
+        devamKonumuHazir = false;
+        okumaKonumunuKaydet(sureNo, ayetNo);
 
         temizle();
 
@@ -3496,11 +3529,23 @@ oynat.addEventListener(
                 ilk
             ){
 
+                let baslangicAyet = ilk;
+
+                if(devamKonumuHazir){
+                    const kayitliSure = Number(localStorage.getItem("kuranSonSure"));
+                    const kayitliAyet = Number(localStorage.getItem("kuranSonAyet"));
+                    const kayitli = zamanlar.find(z =>
+                        z.ayet === kayitliAyet && kayitliSure === Number(SURE)
+                    );
+                    if(kayitli) baslangicAyet = kayitli;
+                }
+
                 audio.currentTime =
-                ilk.baslangic;
+                baslangicAyet.baslangic;
 
                 aktifAyet = null;
                 sayfaDegisti = false;
+                devamKonumuHazir = false;
 
             }
 
@@ -3673,6 +3718,7 @@ okuyucuSec.addEventListener(
         sayfaDegisti=true;
 
         OKUYUCU=secilen;
+        localStorage.setItem("kuranOkuyucuReadId", String(OKUYUCU.readId));
 
         durum.textContent =
         OKUYUCU.name +
@@ -3864,7 +3910,7 @@ onceki.addEventListener("click", async ()=>{
 
     if(devamEt){
         const ilk = SAYFA_AYETLERI[0];
-        if(ilk) await ayeteGit(ilk.ayet, ilk.sure);
+        if(ilk) await ayeteGit(ilk.ayet, ilk.sure, true);
     }
 });
 
@@ -3888,7 +3934,7 @@ sonraki.addEventListener("click", async ()=>{
 
     if(devamEt){
         const ilk = SAYFA_AYETLERI[0];
-        if(ilk) await ayeteGit(ilk.ayet, ilk.sure);
+        if(ilk) await ayeteGit(ilk.ayet, ilk.sure, true);
     }
 });
 
