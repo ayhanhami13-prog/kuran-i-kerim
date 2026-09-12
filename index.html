@@ -1422,16 +1422,6 @@ body.gece-modu .meal-okuyucu-panel small{color:#bbb;}
         </select>
     </div>
 
-    <button type="button" id="mealOkuyucuBtn" class="meal-okuyucu-btn">🎙 Meal Okuyucu</button>
-    <div id="mealOkuyucuPanel" class="meal-okuyucu-panel" hidden>
-        <span>🎙 Meal Okuyucu</span>
-        <select id="mealOkuyucuSec">
-            <option value="yusuf">Yusuf Ziya Özkan — Elmalılı Hamdi Yazır</option>
-            <option value="hayri">Hayri Küçükdeniz — Suat Yıldırım</option>
-        </select>
-        <small>Ses kaynağı için lisanslı bağlantı gerektiğinde buraya bağlanacak.</small>
-    </div>
-
     <div class="okuyucu-kontrol meal-kontrol meal-secim-kontrol">
         <span class="secim-etiket meal-etiket">📖 Meal</span>
         <select id="mealSec">
@@ -1969,9 +1959,7 @@ document.getElementById("dilSec");
 
 const mealSec =
 document.getElementById("mealSec");
-const mealOkuyucuBtn = document.getElementById("mealOkuyucuBtn");
-const mealOkuyucuPanel = document.getElementById("mealOkuyucuPanel");
-const mealOkuyucuSec = document.getElementById("mealOkuyucuSec");
+let AKTIF_MEAL_OKUYUCU = "hayri";
 
 const gorunumBtn = document.getElementById("gorunumBtn");
 const gorunumPanel = document.getElementById("gorunumPanel");
@@ -2195,7 +2183,13 @@ async function okuyuculariYukle(){
             benzersiz.push(x);
         }
 
-        OKUYUCULAR=benzersiz;
+        const hayriOkuyucu = {
+            readId: -1,
+            name: "Hayri Küçükdeniz — Suat Yıldırım",
+            server: ""
+        };
+
+        OKUYUCULAR=[hayriOkuyucu, ...benzersiz];
 
         okuyucuSec.innerHTML="";
 
@@ -2222,13 +2216,19 @@ async function okuyuculariYukle(){
         const kayitliReadId = Number(localStorage.getItem("kuranOkuyucuReadId"));
         const varsayilan =
         OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
-        OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
         OKUYUCULAR[0];
 
         OKUYUCU=varsayilan;
 
         okuyucuSec.value =
         String(OKUYUCU.readId);
+
+        if(Number(OKUYUCU.readId) === -1){
+            mealOkuyucuAktif = true;
+            AKTIF_MEAL_OKUYUCU = "hayri";
+        }else{
+            mealOkuyucuAktif = false;
+        }
 
     }catch(e){
 
@@ -2242,16 +2242,26 @@ async function okuyuculariYukle(){
          * ayarı çalışmaya devam etsin.
          */
         okuyucuSec.innerHTML =
+        '<option value="-1">Hayri Küçükdeniz — Suat Yıldırım</option>' +
         '<option value="5">AbdulBaset AbdulSamad</option>';
 
-        okuyucuSec.value="5";
-        localStorage.setItem("kuranOkuyucuReadId", "5");
+        const kayitli = Number(localStorage.getItem("kuranOkuyucuReadId"));
+        const fallbackReadId = kayitli === 5 ? 5 : -1;
+        okuyucuSec.value=String(fallbackReadId);
+        localStorage.setItem("kuranOkuyucuReadId", String(fallbackReadId));
 
-        OKUYUCU={
-            readId:DEFAULT_READ_ID,
-            name:"AbdulBaset AbdulSamad",
-            server:"https://server7.mp3quran.net/basit/"
-        };
+        if(fallbackReadId === -1){
+            OKUYUCU={readId:-1,name:"Hayri Küçükdeniz — Suat Yıldırım",server:""};
+            mealOkuyucuAktif=true;
+            AKTIF_MEAL_OKUYUCU="hayri";
+        }else{
+            OKUYUCU={
+                readId:DEFAULT_READ_ID,
+                name:"AbdulBaset AbdulSamad",
+                server:"https://server7.mp3quran.net/basit/"
+            };
+            mealOkuyucuAktif=false;
+        }
     }
 
 }
@@ -3422,6 +3432,73 @@ async function ayeteGit(ayetNo, sureNo=SURE, otomatikDevam=false){
 
     try{
 
+        /* Meal Okuyucu aktifken ayete tıklama kesinlikle Arapça
+         * okuyucuyu başlatmamalı. Türkçe ses aynı ayete konumlanıp
+         * oradan devam etmeli. */
+        if(mealOkuyucuAktif){
+            sureNo = Number(sureNo) || SURE;
+            ayetNo = Number(ayetNo);
+            const okumayaDevamEdiyordu = !!oynuyor || !!otomatikDevam;
+
+            if(audio){
+                try{ audio.pause(); }catch(e){}
+            }
+            if(timer) cancelAnimationFrame(timer);
+            oynuyor=false;
+            temizle();
+
+            if(sureNo !== SURE){
+                SURE=sureNo;
+                if(sureSec) sureSec.value=String(SURE);
+                sayfaDegisti=true;
+                try{
+                    const cevap=await fetch(
+                        `https://api.quran.com/api/v4/verses/by_chapter/${SURE}?fields=page_number,verse_number&per_page=300`,
+                        {cache:"no-store"}
+                    );
+                    if(cevap.ok){
+                        const data=await cevap.json();
+                        const hedef=data.verses?.find(v=>Number(v.verse_number)===ayetNo) || data.verses?.[0];
+                        if(hedef?.page_number){
+                            SAYFA=Number(hedef.page_number);
+                            await mushafYukle();
+                        }
+                    }
+                }catch(e){
+                    console.warn("Meal ayeti için sayfa bulunamadı:",e);
+                }
+            }
+
+            try{
+                await mealSesiniHazirla(false);
+                if(!mealAudio) throw new Error("Meal sesi hazırlanamadı");
+                await mealZamanlariniOlustur(SURE, Number(mealAudio.duration));
+
+                const hedef=mealZamanlar.find(z=>Number(z.ayet)===ayetNo);
+                if(!hedef) throw new Error("Bu ayet için Meal zamanlaması bulunamadı");
+
+                mealAudio.currentTime=Number(hedef.baslangic)||0;
+                mealAktifAyet=null;
+                okumaKonumunuKaydet(SURE, ayetNo);
+
+                if(okumayaDevamEdiyordu){
+                    await mealAudio.play();
+                    oynuyor=true;
+                    if(timer) cancelAnimationFrame(timer);
+                    mealTakipDongusu();
+                    mealTakibiniGuncelle();
+                    durum.textContent=`${MEAL_OKUYUCU_KAYNAKLARI[AKTIF_MEAL_OKUYUCU]?.name || "Meal Okuyucu"} — ${SURE}:${ayetNo} okunuyor...`;
+                }else{
+                    durum.textContent=`${MEAL_OKUYUCU_KAYNAKLARI[AKTIF_MEAL_OKUYUCU]?.name || "Meal Okuyucu"} — ${SURE}:${ayetNo} hazır. Oynat'a basınca başlayacak.`;
+                }
+                return;
+            }catch(mealErr){
+                console.error("Meal ayeti başlatma hatası:", mealErr);
+                durum.textContent="Meal ayeti başlatılamadı.";
+                return;
+            }
+        }
+
         sureNo = Number(sureNo) || SURE;
         const okumayaDevamEdiyordu = !!oynuyor || !!otomatikDevam;
 
@@ -3568,6 +3645,12 @@ oynat.addEventListener(
 
         try{
 
+            if(mealOkuyucuAktif){
+                menuyuGizle();
+                await mealSesiniHazirla(true);
+                return;
+            }
+
             sesHazirla();
 
 
@@ -3697,6 +3780,14 @@ duraklat.addEventListener(
     "click",
     ()=>{
 
+        if(mealOkuyucuAktif){
+            if(mealAudio) mealAudio.pause();
+            oynuyor=false;
+            if(timer) cancelAnimationFrame(timer);
+            durum.textContent="Meal okuması duraklatıldı";
+            return;
+        }
+
         if(!audio)
             return;
 
@@ -3727,6 +3818,19 @@ duraklat.addEventListener(
 durdur.addEventListener(
     "click",
     ()=>{
+
+        if(mealOkuyucuAktif){
+            if(mealAudio) {
+                mealAudio.pause();
+                try{mealAudio.currentTime=0;}catch(e){}
+            }
+            oynuyor=false;
+            if(timer) cancelAnimationFrame(timer);
+            mealAktifAyet=null;
+            temizle();
+            durum.textContent="Hazır";
+            return;
+        }
 
         if(audio){
 
@@ -3767,23 +3871,314 @@ durdur.addEventListener(
 
 
 /* =========================================================
-   MEAL OKUYUCU
+   MEAL OKUYUCU SES MOTORU
    ========================================================= */
-if(mealOkuyucuBtn && mealOkuyucuPanel){
-    mealOkuyucuBtn.addEventListener("click", ()=>{
-        mealOkuyucuPanel.hidden = !mealOkuyucuPanel.hidden;
-    });
-}
-if(mealOkuyucuSec){
-    const kayitliMealOkuyucu = localStorage.getItem("kuranMealOkuyucu");
-    if(kayitliMealOkuyucu && [...mealOkuyucuSec.options].some(o=>o.value===kayitliMealOkuyucu)){
-        mealOkuyucuSec.value = kayitliMealOkuyucu;
+const MEAL_OKUYUCU_KAYNAKLARI = {
+    hayri: {
+        name: "Hayri Küçükdeniz — Suat Yıldırım",
+        archiveId: "Mealli_Hatim-Saad_Al-Ghamdi-Hayri_Kucukdeniz",
+        sourcePage: "https://mbirgin.com/?ID=297&c=HTML&t=seslikuranvemeal"
     }
-    mealOkuyucuSec.addEventListener("change", ()=>{
-        localStorage.setItem("kuranMealOkuyucu", mealOkuyucuSec.value);
-        const ad = mealOkuyucuSec.options[mealOkuyucuSec.selectedIndex].text;
-        durum.textContent = ad + " seçildi. Ses kaynağı lisanslı URL ile bağlanacak.";
+};
+
+let mealAudio = null;
+let mealAudioReader = null;
+let mealAudioFilesCache = {};
+let mealAudioToken = 0;
+let mealOkuyucuAktif = false;
+let mealZamanlar = [];
+let mealAktifAyet = null;
+
+function mealAudioDurdur(){
+    if(mealAudio){
+        try{ mealAudio.pause(); }catch(e){}
+        mealAudio.removeAttribute("src");
+        try{ mealAudio.load(); }catch(e){}
+    }
+    mealAudio = null;
+    mealAudioReader = null;
+}
+
+async function mealAudioDosyalariYukle(readerKey){
+    if(mealAudioFilesCache[readerKey]) return mealAudioFilesCache[readerKey];
+    const kaynak = MEAL_OKUYUCU_KAYNAKLARI[readerKey];
+    if(!kaynak) throw new Error("Meal okuyucu bulunamadı");
+
+    const cevap = await fetch(
+        `https://archive.org/metadata/${encodeURIComponent(kaynak.archiveId)}`,
+        {cache:"no-store"}
+    );
+    if(!cevap.ok) throw new Error("Meal ses arşivi alınamadı: " + cevap.status);
+    const data = await cevap.json();
+    const files = (data.files || [])
+        .map(x=>x && x.name ? String(x.name) : "")
+        .filter(name=>/\.(mp3|m4a|ogg)$/i.test(name));
+
+    if(!files.length) throw new Error("Meal ses dosyası bulunamadı");
+    mealAudioFilesCache[readerKey] = files;
+    return files;
+}
+
+function normalizeMealName(v){
+    return String(v||"")
+        .toLocaleLowerCase("tr-TR")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"")
+        .replace(/ı/g,"i")
+        .replace(/ğ/g,"g")
+        .replace(/ü/g,"u")
+        .replace(/ş/g,"s")
+        .replace(/ö/g,"o")
+        .replace(/ç/g,"c")
+        .replace(/[^a-z0-9]+/g," ")
+        .trim();
+}
+
+function mealSureAd(sureNo){
+    const x = SURELER.find(a=>Number(a[0])===Number(sureNo));
+    return x ? normalizeMealName(x[1]) : "";
+}
+
+async function mealCuzNoBul(){
+    try{
+        const cevap = await fetch(
+            `https://api.quran.com/api/v4/verses/by_page/${SAYFA}?fields=juz_number&per_page=50`,
+            {cache:"no-store"}
+        );
+        if(!cevap.ok) return null;
+        const data = await cevap.json();
+        const j = (data.verses||[]).map(v=>Number(v.juz_number)).find(Boolean);
+        return j || null;
+    }catch(e){
+        return null;
+    }
+}
+
+function mealCuzDosyasiBul(files,cuzNo){
+    if(!cuzNo) return null;
+    const n = String(cuzNo).padStart(2,"0");
+    const adaylar = files.filter(f=>{
+        const b=normalizeMealName(f.split("/").pop());
+        return new RegExp(`(^|[^0-9])0?${cuzNo}([^0-9]|$)`).test(b) ||
+               b.includes(`cuz ${cuzNo}`) || b.includes(`cuz${cuzNo}`) ||
+               b.includes(`cuz ${n}`) || b.includes(`cuz${n}`) ||
+               b.includes(`juz ${cuzNo}`) || b.includes(`juz${cuzNo}`) ||
+               b.includes(`juz ${n}`) || b.includes(`juz${n}`);
     });
+    return adaylar[0] || null;
+}
+
+function mealSureDosyasiBul(files,sureNo){
+    const ad=mealSureAd(sureNo);
+    const n=String(sureNo).padStart(3,"0");
+    return files.find(f=>{
+        const b=normalizeMealName(f.split("/").pop());
+        return b.includes(ad) ||
+               new RegExp(`(^|[^0-9])${sureNo}([^0-9]|$)`).test(b) ||
+               b.includes(n);
+    }) || null;
+}
+
+async function mealAudioUrliniBul(readerKey,sureNo){
+    const files=await mealAudioDosyalariYukle(readerKey);
+    let dosya=mealSureDosyasiBul(files,sureNo);
+    if(!dosya){
+        const cuz=await mealCuzNoBul();
+        dosya=mealCuzDosyasiBul(files,cuz);
+    }
+    if(!dosya) throw new Error("Bu sûre için uygun Meal ses dosyası bulunamadı");
+    return `https://archive.org/download/${encodeURIComponent(MEAL_OKUYUCU_KAYNAKLARI[readerKey].archiveId)}/${dosya.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+async function mealZamanlariniOlustur(sureNo, duration){
+    mealZamanlar = [];
+    mealAktifAyet = null;
+
+    if(!Number.isFinite(Number(duration)) || duration <= 0) return;
+
+    /*
+     * Türkçe Meal kayıtlarında ayet bazlı zaman damgası bulunmadığı için
+     * süreyi sûre ayetlerine metin uzunluğuna göre paylaştırıyoruz.
+     * Böylece ses ilerlerken ilgili ayet sarı olarak takip edilir.
+     */
+    try{
+        const readerKey = AKTIF_MEAL_OKUYUCU;
+        const translationId = readerKey === "yusuf" ? 52 : null;
+        let verses = [];
+
+        if(translationId){
+            const cevap = await fetch(
+                `https://api.quran.com/api/v4/verses/by_chapter/${sureNo}?translations=${translationId}&fields=verse_number&per_page=300`,
+                {cache:"no-store"}
+            );
+            if(cevap.ok){
+                const data = await cevap.json();
+                verses = (data.verses || []).map(v=>({
+                    ayet:Number(v.verse_number),
+                    metin:String(v.translations?.[0]?.text || "")
+                        .replace(/<[^>]*>/g, "")
+                        .replace(/&nbsp;/g," ")
+                        .trim()
+                }));
+            }
+        }
+
+        /* Hayri kaydında da sayfadaki Meal metinlerini kullanarak
+           ayet uzunluklarına göre takip yapılabilsin. */
+        if(!verses.length){
+            const els = [...mealSayfa.querySelectorAll(`.meal-ayet[data-sure="${sureNo}"]`)];
+            verses = els.map(el=>({
+                ayet:Number(el.dataset.ayet),
+                metin:el.innerText.replace(/^\s*\d+\s*/,"").trim()
+            })).filter(x=>Number.isFinite(x.ayet));
+        }
+
+        if(!verses.length) return;
+
+        const agirliklar = verses.map(v=>Math.max(20, v.metin.replace(/\s+/g,"").length));
+        const toplam = agirliklar.reduce((a,b)=>a+b,0);
+        let imlec = 0;
+
+        verses.forEach((v,i)=>{
+            const baslangic = imlec;
+            const pay = duration * agirliklar[i] / toplam;
+            imlec += pay;
+            mealZamanlar.push({
+                ayet:v.ayet,
+                baslangic:baslangic,
+                bitis:i===verses.length-1 ? duration : imlec
+            });
+        });
+    }catch(e){
+        console.warn("Meal ayet zamanları oluşturulamadı:",e);
+    }
+}
+
+function mealTakibiniGuncelle(){
+    if(!mealOkuyucuAktif || !mealAudio || !oynuyor) return;
+
+    const saniye = Number(mealAudio.currentTime) || 0;
+    const aktif = mealZamanlar.find(z=>
+        saniye >= z.baslangic && saniye < z.bitis
+    ) || (mealZamanlar.length && saniye >= mealZamanlar[mealZamanlar.length-1].baslangic
+        ? mealZamanlar[mealZamanlar.length-1] : null);
+
+    if(!aktif || mealAktifAyet === aktif.ayet) return;
+
+    temizle();
+
+    const arapcaHedefler = document.querySelectorAll(
+        `.ayet[data-sure="${SURE}"][data-ayet="${aktif.ayet}"]`
+    );
+    arapcaHedefler.forEach(el=>el.classList.add("okunuyor"));
+
+    const mealHedefler = mealSayfa.querySelectorAll(
+        `.meal-ayet[data-sure="${SURE}"][data-ayet="${aktif.ayet}"]`
+    );
+    mealHedefler.forEach(el=>el.classList.add("okunuyor"));
+
+    const hedef = document.body.classList.contains("gorunum-meal")
+        ? mealHedefler[0]
+        : arapcaHedefler[0];
+
+    if(hedef){
+        hedef.scrollIntoView({behavior:"smooth", block:"center"});
+    }
+
+    mealAktifAyet = aktif.ayet;
+    okumaKonumunuKaydet(SURE, aktif.ayet);
+    const kaynak = MEAL_OKUYUCU_KAYNAKLARI[AKTIF_MEAL_OKUYUCU];
+    durum.textContent = `${kaynak ? kaynak.name : "Meal Okuyucu"} — ${SURE}:${aktif.ayet} okunuyor...`;
+}
+
+function mealTakipDongusu(){
+    if(!mealOkuyucuAktif || !oynuyor || !mealAudio) return;
+    mealTakibiniGuncelle();
+    timer = requestAnimationFrame(mealTakipDongusu);
+}
+
+async function mealSesiniHazirla(oynatmayaBasla=true){
+    const readerKey = AKTIF_MEAL_OKUYUCU;
+    const kaynak = MEAL_OKUYUCU_KAYNAKLARI[readerKey];
+    if(!kaynak) return false;
+
+    const token=++mealAudioToken;
+    durum.textContent = kaynak.name + " sesi hazırlanıyor...";
+
+    const url=await mealAudioUrliniBul(readerKey,SURE);
+    if(token!==mealAudioToken) return false;
+
+    if(!mealAudio || mealAudioReader!==readerKey){
+        mealAudioDurdur();
+        mealAudio=new Audio();
+        mealAudio.preload="auto";
+        mealAudioReader=readerKey;
+        mealAudio.addEventListener("ended", async()=>{
+            if(!mealOkuyucuAktif) return;
+            const sonraki = Number(SURE)+1;
+            if(sonraki>114){
+                oynuyor=false;
+                durum.textContent="Meal okuması tamamlandı.";
+                return;
+            }
+            SURE=sonraki;
+            mealZamanlar = [];
+            mealAktifAyet = null;
+            if(sureSec) sureSec.value=String(SURE);
+            try{
+                const cevap=await fetch(`https://api.quran.com/api/v4/verses/by_chapter/${SURE}?fields=page_number&per_page=5`,{cache:"no-store"});
+                const data=await cevap.json();
+                const hedef=Number(data.verses?.[0]?.page_number);
+                if(hedef){
+                    SAYFA=hedef;
+                    sayfaDegisti=true;
+                    await mushafYukle();
+                }
+                await mealSesiniHazirla(true);
+            }catch(e){
+                console.error(e);
+                oynuyor=false;
+                durum.textContent="Sonraki sûrenin Meal sesi başlatılamadı.";
+            }
+        });
+        mealAudio.addEventListener("error",()=>{
+            durum.textContent=kaynak.name+" sesi yüklenemedi.";
+        });
+    }
+
+    mealAudio.pause();
+    mealAudio.src=url;
+    mealAudio.load();
+
+    /* Ses kaynağı yüklendiğinde duration hazır olmadan dönme.
+       Özellikle ayete tıklamada false ile çağrıldığında da
+       ayet zamanlarını hesaplayabilmek için metadata beklenmeli. */
+    await new Promise((resolve,reject)=>{
+        if(mealAudio.readyState>=1 && Number.isFinite(Number(mealAudio.duration)) && Number(mealAudio.duration)>0){
+            resolve();
+            return;
+        }
+        const ok=()=>{temizle();resolve()};
+        const er=()=>{temizle();reject(new Error("Meal sesi yüklenemedi"))};
+        const temizle=()=>{
+            mealAudio.removeEventListener("loadedmetadata",ok);
+            mealAudio.removeEventListener("durationchange",ok);
+            mealAudio.removeEventListener("error",er);
+        };
+        mealAudio.addEventListener("loadedmetadata",ok,{once:true});
+        mealAudio.addEventListener("durationchange",ok,{once:true});
+        mealAudio.addEventListener("error",er,{once:true});
+    });
+
+    if(!oynatmayaBasla) return true;
+
+    await mealAudio.play();
+    oynuyor=true;
+    await mealZamanlariniOlustur(SURE, Number(mealAudio.duration));
+    if(timer) cancelAnimationFrame(timer);
+    mealTakipDongusu();
+    durum.textContent=kaynak.name+" okuyor...";
+    return true;
 }
 
 /* =========================================================
@@ -3799,7 +4194,7 @@ okuyucuSec.addEventListener(
 
         const secilen =
         OKUYUCULAR.find(
-            x=>x.readId===readId
+            x=>Number(x.readId)===readId
         );
 
         if(!secilen)
@@ -3823,6 +4218,15 @@ okuyucuSec.addEventListener(
 
         OKUYUCU=secilen;
         localStorage.setItem("kuranOkuyucuReadId", String(OKUYUCU.readId));
+
+        if(Number(OKUYUCU.readId) === -1){
+            mealOkuyucuAktif=true;
+            AKTIF_MEAL_OKUYUCU="hayri";
+            localStorage.setItem("kuranMealOkuyucu", "hayri");
+        }else{
+            mealOkuyucuAktif=false;
+            mealAudioDurdur();
+        }
 
         durum.textContent =
         OKUYUCU.name +
