@@ -2931,7 +2931,8 @@ function sesHazirla(){
     audio.addEventListener(
         "ended",
         async ()=>{
-            if(!oynuyor) return;
+            if(!oynuyor || otomatikGecisYapiliyor) return;
+            otomatikGecisYapiliyor = true;
 
             const bitenSure = Number(audioSure || SURE);
             const bitenAyet = Number(aktifAyet || 0);
@@ -2951,16 +2952,25 @@ function sesHazirla(){
 
             try{
                 if(sonrakiAyet){
-                    // Aynı mushaf sayfasında sûre değişiyorsa bile
-                    // doğrudan sıradaki ayete geç.
-                    SURE = sonrakiAyet.sure;
+                    // Sûre değişse bile oynatma kesilmeden yeni sûrenin
+                    // sesini ve zamanlamasını yükleyip doğrudan devam et.
+                    const yeniSure = Number(sonrakiAyet.sure);
+                    const yeniAyet = Number(sonrakiAyet.ayet);
+                    const sureDegisti = yeniSure !== bitenSure;
+
+                    SURE = yeniSure;
                     if(sureSec) sureSec.value = String(SURE);
-                    audio = null;
-                    audioSure = null;
-                    tumZamanlar = [];
-                    zamanlar = [];
+
+                    if(sureDegisti){
+                        audio = null;
+                        audioSure = null;
+                        tumZamanlar = [];
+                        zamanlar = [];
+                    }
+
                     aktifAyet = null;
-                    await ayeteGit(sonrakiAyet.ayet, sonrakiAyet.sure, true);
+                    oynuyor = true;
+                    await ayeteGit(yeniAyet, yeniSure, true);
                     return;
                 }
 
@@ -2985,6 +2995,8 @@ function sesHazirla(){
                 console.error("Otomatik devam hatası:", e);
                 oynuyor=false;
                 durum.textContent = "Sonraki sayfaya geçilemedi.";
+            }finally{
+                otomatikGecisYapiliyor = false;
             }
         }
     );
@@ -3186,29 +3198,36 @@ async function otomatikSonrakiAdimaGec(){
 
     try{
         const bitenSure = Number(audioSure || SURE);
-        const bitenAyet = Number(aktifAyet || 0);
+        const sonZamanAyet = zamanlar.length ? Number(zamanlar[zamanlar.length - 1].ayet) : 0;
+        const bitenAyet = Number(aktifAyet || sonZamanAyet || 0);
         const mevcutIndex = SAYFA_AYETLERI.findIndex(x =>
             x.sure === bitenSure && x.ayet === bitenAyet
         );
         const sonrakiAyet = mevcutIndex >= 0
             ? SAYFA_AYETLERI[mevcutIndex + 1]
-            : null;
+            : SAYFA_AYETLERI.find(x =>
+                Number(x.sure) > bitenSure ||
+                (Number(x.sure) === bitenSure && Number(x.ayet) > bitenAyet)
+              ) || null;
 
         if(timer) cancelAnimationFrame(timer);
         if(audio) audio.pause();
         temizle();
 
         if(sonrakiAyet){
-            SURE = sonrakiAyet.sure;
+            const yeniSure = Number(sonrakiAyet.sure);
+            const yeniAyet = Number(sonrakiAyet.ayet);
+            SURE = yeniSure;
             if(sureSec) sureSec.value = String(SURE);
-            if(SURE !== bitenSure){
+            if(yeniSure !== bitenSure){
                 audio = null;
                 audioSure = null;
                 tumZamanlar = [];
                 zamanlar = [];
             }
             sayfaDegisti = false;
-            await ayeteGit(sonrakiAyet.ayet, sonrakiAyet.sure, true);
+            oynuyor = true;
+            await ayeteGit(yeniAyet, yeniSure, true);
             return;
         }
 
@@ -3401,6 +3420,17 @@ async function ayeteGit(ayetNo, sureNo=SURE, otomatikDevam=false){
         }
 
         sesHazirla();
+
+        /* Ses nesnesinin gerçekten hedef sûreye ait olduğundan emin ol. */
+        if(Number(audioSure) !== Number(sureNo)){
+            if(audio) audio.pause();
+            audio = null;
+            audioSure = null;
+            tumZamanlar = [];
+            zamanlar = [];
+            SURE = sureNo;
+            sesHazirla();
+        }
 
         /* Zamanlamalar henüz alınmadıysa tüm sureyi al. */
         if(!tumZamanlar.length){
