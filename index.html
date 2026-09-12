@@ -1373,6 +1373,17 @@ body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
 }
 
 </style>
+
+<style>
+.meal-okuyucu-btn{cursor:pointer;}
+.meal-okuyucu-panel{display:flex;flex-direction:column;gap:5px;min-width:240px;padding:8px 10px;border:1px solid #cfd8d3;border-radius:10px;background:#fff;}
+.meal-okuyucu-panel span{font-weight:700;}
+.meal-okuyucu-panel select{padding:6px;border:1px solid #cfd8d3;border-radius:7px;background:#fff;}
+.meal-okuyucu-panel small{font-size:11px;color:#777;line-height:1.25;}
+body.gece-modu .meal-okuyucu-panel{background:#202824;border-color:#43534b;color:#e8eee9;}
+body.gece-modu .meal-okuyucu-panel select{background:#202824;color:#edf2ee;border-color:#43534b;}
+body.gece-modu .meal-okuyucu-panel small{color:#bbb;}
+</style>
 </head>
 
 <body>
@@ -1409,6 +1420,16 @@ body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
         <select id="dilSec">
             <option value="turkish">Türkçe</option>
         </select>
+    </div>
+
+    <button type="button" id="mealOkuyucuBtn" class="meal-okuyucu-btn">🎙 Meal Okuyucu</button>
+    <div id="mealOkuyucuPanel" class="meal-okuyucu-panel" hidden>
+        <span>🎙 Meal Okuyucu</span>
+        <select id="mealOkuyucuSec">
+            <option value="yusuf">Yusuf Ziya Özkan — Elmalılı Hamdi Yazır</option>
+            <option value="hayri">Hayri Küçükdeniz — Suat Yıldırım</option>
+        </select>
+        <small>Ses kaynağı için lisanslı bağlantı gerektiğinde buraya bağlanacak.</small>
     </div>
 
     <div class="okuyucu-kontrol meal-kontrol meal-secim-kontrol">
@@ -1948,6 +1969,9 @@ document.getElementById("dilSec");
 
 const mealSec =
 document.getElementById("mealSec");
+const mealOkuyucuBtn = document.getElementById("mealOkuyucuBtn");
+const mealOkuyucuPanel = document.getElementById("mealOkuyucuPanel");
+const mealOkuyucuSec = document.getElementById("mealOkuyucuSec");
 
 const gorunumBtn = document.getElementById("gorunumBtn");
 const gorunumPanel = document.getElementById("gorunumPanel");
@@ -3741,6 +3765,26 @@ durdur.addEventListener(
     }
 );
 
+
+/* =========================================================
+   MEAL OKUYUCU
+   ========================================================= */
+if(mealOkuyucuBtn && mealOkuyucuPanel){
+    mealOkuyucuBtn.addEventListener("click", ()=>{
+        mealOkuyucuPanel.hidden = !mealOkuyucuPanel.hidden;
+    });
+}
+if(mealOkuyucuSec){
+    const kayitliMealOkuyucu = localStorage.getItem("kuranMealOkuyucu");
+    if(kayitliMealOkuyucu && [...mealOkuyucuSec.options].some(o=>o.value===kayitliMealOkuyucu)){
+        mealOkuyucuSec.value = kayitliMealOkuyucu;
+    }
+    mealOkuyucuSec.addEventListener("change", ()=>{
+        localStorage.setItem("kuranMealOkuyucu", mealOkuyucuSec.value);
+        const ad = mealOkuyucuSec.options[mealOkuyucuSec.selectedIndex].text;
+        durum.textContent = ad + " seçildi. Ses kaynağı lisanslı URL ile bağlanacak.";
+    });
+}
 
 /* =========================================================
    OKUYUCU DEĞİŞTİRME
