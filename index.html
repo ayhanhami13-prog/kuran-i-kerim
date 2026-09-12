@@ -2898,66 +2898,67 @@ async function mushafYukle(){
    SESİ HAZIRLA
    ========================================================= */
 
-function sesHazirla(){
+function sesHazirla(hedefSure=SURE){
 
-    if(audio)
-        return;
-
+    const hedefSureNo = Number(hedefSure);
 
     const sesUrl =
     OKUYUCU.server +
-    String(SURE).padStart(3,"0") +
+    String(hedefSureNo).padStart(3,"0") +
     ".mp3";
 
-    audio =
-    new Audio(sesUrl);
+    /*
+     * Aynı HTMLAudioElement'i kullanıyoruz.
+     * Yeni sûreye geçerken yeni Audio() oluşturmak yerine
+     * mevcut oynatıcıya yeni src veriyoruz. Böylece kullanıcı
+     * tarafından başlatılmış mevcut oynatma zinciri korunuyor.
+     */
+    if(!audio){
 
-    audioSure = SURE;
+        audio = new Audio();
+        audio.preload="auto";
 
-    audio.preload="auto";
+        audio.addEventListener(
+            "loadedmetadata",
+            ()=>{
+                console.log(
+                    "Abdulbasit ses süresi:",
+                    audio.duration
+                );
+            }
+        );
 
+        audio.addEventListener(
+            "ended",
+            async ()=>{
+                if(!oynuyor || otomatikGecisYapiliyor) return;
+                await otomatikSonrakiAdimaGec();
+            }
+        );
 
-    audio.addEventListener(
-        "loadedmetadata",
-        ()=>{
-            console.log(
-                "Abdulbasit ses süresi:",
-                audio.duration
-            );
-        }
-    );
+        audio.addEventListener(
+            "error",
+            e=>{
+                console.error("Ses hatası:", e);
+                durum.textContent =
+                OKUYUCU.name +
+                " sesi yüklenemedi.";
+            }
+        );
+    }
 
+    if(Number(audioSure) !== hedefSureNo || audio.src !== sesUrl){
 
-    audio.addEventListener(
-        "ended",
-        async ()=>{
-            /*
-             * Ses dosyası bittiğinde aktifAyet bazen son ayete ait
-             * zaman aralığından çıkmış olabiliyor. Bu yüzden burada
-             * doğrudan otomatikSonrakiAdimaGec() çağrılır; fonksiyon
-             * son zamanlamayı da yedek olarak kullanır.
-             */
-            if(!oynuyor || otomatikGecisYapiliyor) return;
-            await otomatikSonrakiAdimaGec();
-        }
-    );
+        audio.pause();
+        audio.src = sesUrl;
+        audioSure = hedefSureNo;
 
-    audio.addEventListener(
-        "error",
-        e=>{
-
-            console.error(
-                "Ses hatası:",
-                e
-            );
-
-            durum.textContent =
-            OKUYUCU.name +
-            " sesi yüklenemedi.";
-
-        }
-    );
-
+        /*
+         * src dinamik değiştirildiğinde load() çağrısı yeni kaynağın
+         * seçilip yüklenmesini başlatır.
+         */
+        audio.load();
+    }
 }
 
 
@@ -3205,8 +3206,11 @@ async function otomatikSonrakiAdimaGec(){
             SURE = yeniSure;
             if(sureSec) sureSec.value = String(SURE);
             if(yeniSure !== bitenSure){
-                audio = null;
-                audioSure = null;
+                /*
+                 * Audio nesnesini silmiyoruz. Aynı oynatıcı yeni sûreye
+                 * ayeteGit() içinde yeni src ile geçirilecek.
+                 */
+                audioSure = bitenSure;
                 tumZamanlar = [];
                 zamanlar = [];
             }
@@ -3395,7 +3399,6 @@ async function ayeteGit(ayetNo, sureNo=SURE, otomatikDevam=false){
             if(!okumayaDevamEdiyordu) oynuyor=false;
             if(timer) cancelAnimationFrame(timer);
             temizle();
-            audio=null;
             tumZamanlar=[];
             zamanlar=[];
             SURE=sureNo;
@@ -3404,18 +3407,11 @@ async function ayeteGit(ayetNo, sureNo=SURE, otomatikDevam=false){
             sayfaDegisti=true;
         }
 
-        sesHazirla();
-
-        /* Ses nesnesinin gerçekten hedef sûreye ait olduğundan emin ol. */
-        if(Number(audioSure) !== Number(sureNo)){
-            if(audio) audio.pause();
-            audio = null;
-            audioSure = null;
-            tumZamanlar = [];
-            zamanlar = [];
-            SURE = sureNo;
-            sesHazirla();
-        }
+        /*
+         * Yeni sûreye geçişte mevcut Audio nesnesini koru;
+         * sadece src'yi yeni sûrenin dosyasına çevir.
+         */
+        sesHazirla(sureNo);
 
         /* Zamanlamalar henüz alınmadıysa tüm sureyi al. */
         if(!tumZamanlar.length){
@@ -3467,7 +3463,47 @@ async function ayeteGit(ayetNo, sureNo=SURE, otomatikDevam=false){
 
         temizle();
 
-        await audio.play();
+        try{
+            await audio.play();
+        }catch(playErr){
+            /*
+             * Yeni sûrenin kaynağı henüz oynatılabilir duruma gelmediyse
+             * canplay sonrasında aynı Audio nesnesiyle tekrar dene.
+             */
+            await new Promise((resolve,reject)=>{
+                let tamamlandi=false;
+
+                const temizlePlayDinleyicileri=()=>{
+                    audio.removeEventListener("canplay", canplay);
+                    audio.removeEventListener("error", hata);
+                };
+
+                const canplay=async()=>{
+                    if(tamamlandi) return;
+                    try{
+                        await audio.play();
+                        tamamlandi=true;
+                        temizlePlayDinleyicileri();
+                        resolve();
+                    }catch(e){
+                        tamamlandi=true;
+                        temizlePlayDinleyicileri();
+                        reject(e);
+                    }
+                };
+
+                const hata=()=>{
+                    if(tamamlandi) return;
+                    tamamlandi=true;
+                    temizlePlayDinleyicileri();
+                    reject(new Error("Ses kaynağı yüklenemedi."));
+                };
+
+                audio.addEventListener("canplay", canplay, {once:true});
+                audio.addEventListener("error", hata, {once:true});
+            });
+        }
+
         oynuyor = true;
 
         if(timer)
