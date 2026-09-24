@@ -2055,6 +2055,7 @@ let ezberAyetIndex = 0;
 let ezberZamanlar = [];
 let ezberTimer = null;
 let ezberSesHazirlaniyor = false;
+let ezberAyetSayfalari = new Map();
 
 // Sayfa değiştiğinde ses, yeni sayfanın ilk ayetinden başlamalı.
 let sayfaDegisti = true;
@@ -2518,6 +2519,16 @@ async function ezberBaslangicSayfasiniBul(sureNo, ayetNo){
         );
         if(!cevap.ok) throw new Error("Ezber ayet sayfası alınamadı");
         const data = await cevap.json();
+
+        /* Ezber boyunca her ayetin hangi mushaf sayfasında olduğunu
+           baştan sakla. Böylece her ayette yeniden API çağrısı yapmaya
+           gerek kalmadan sayfa değişimini anında yapabiliriz. */
+        ezberAyetSayfalari = new Map(
+            (data.verses || [])
+                .map(v => [Number(v.verse_number), Number(v.page_number)])
+                .filter(([ayet, sayfa]) => ayet > 0 && sayfa > 0)
+        );
+
         const hedef = (data.verses || []).find(v => Number(v.verse_number) === Number(ayetNo));
         const sayfaNo = Number(hedef && hedef.page_number);
         if(!sayfaNo) throw new Error("Seçilen ayetin sayfası bulunamadı");
@@ -2570,8 +2581,27 @@ function ezberVurgula(ayetNo, sureNo=ezberSureNo){
     document.querySelectorAll(".ayet.okunuyor,.meal-ayet.okunuyor")
         .forEach(el=>el.classList.remove("okunuyor"));
 
-    document.querySelectorAll(`.ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"], .meal-ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"]`)
-        .forEach(el=>el.classList.add("okunuyor"));
+    const hedefler = document.querySelectorAll(
+        `.ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"], .meal-ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"]`
+    );
+
+    hedefler.forEach(el=>el.classList.add("okunuyor"));
+
+    /* Normal okuma modundaki gibi ezberde de aktif ayet ekrana otomatik
+       gelsin. Yeni ayete geçildikçe sayfa kullanıcı tarafından elle
+       kaydırılmak zorunda kalmasın. */
+    if(hedefler.length){
+        const hedef = hedefler[0];
+        requestAnimationFrame(()=>{
+            try{
+                hedef.scrollIntoView({
+                    behavior:"smooth",
+                    block:"center",
+                    inline:"nearest"
+                });
+            }catch(e){}
+        });
+    }
 }
 
 function ezberTemizle(){
@@ -2653,6 +2683,22 @@ async function ezberAyetOynat(){
             console.error("Ezber sayfa takip hatası:", e);
             ezberDurum.textContent =
                 "Ezber sayfası yüklenemedi; ses devam ediyor.";
+        }
+    }
+
+    /* Ezber sesindeki sıradaki ayet başka bir mushaf sayfasındaysa,
+       ses durmadan o sayfayı yükle. Böylece örneğin 17-26 aralığında
+       sayfa değişince hem ekran hem ses aynı ayeti takip eder. */
+    const hedefSayfa = Number(ezberAyetSayfalari.get(Number(z.ayet)) || 0);
+    if(hedefSayfa && hedefSayfa !== Number(SAYFA)){
+        try{
+            SAYFA = hedefSayfa;
+            SURE = Number(ezberSureNo);
+            if(sureSec) sureSec.value = String(SURE);
+            sayfaDegisti = true;
+            await mushafYukle();
+        }catch(e){
+            console.error("Ezber sayfa geçişi hatası:", e);
         }
     }
 
