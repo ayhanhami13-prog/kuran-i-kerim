@@ -610,9 +610,6 @@ body.gorunum-meal #sayfa{
 
 #favorilerBtn{
     background:linear-gradient(135deg,#a44d62,#d06b80);
-    min-height:46px;
-    padding:12px 18px;
-    font-size:15px;
 }
 #favorilerBtn:hover{background:linear-gradient(135deg,#b85b70,#dc7890)}
 
@@ -625,17 +622,14 @@ body.gorunum-meal #sayfa{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    width:42px;
-    height:42px;
-    min-width:42px;
-    min-height:42px;
-    margin:0 6px;
-    border:2px solid #c5aa55;
+    width:25px;
+    height:25px;
+    margin:0 4px;
+    border:1px solid #c5aa55;
     border-radius:50%;
     background:#fffaf0;
     color:#a67c16;
-    font-size:20px;
-    font-weight:900;
+    font-size:14px;
     cursor:pointer;
     vertical-align:middle;
     transition:.15s ease;
@@ -721,32 +715,28 @@ body.gece-modu .favori-satir{background:#303630}
     .mobil-kontrol-bar .mobil-onceki,.mobil-kontrol-bar .mobil-sonraki{background:linear-gradient(135deg,#315c75,#447b99)}
     body{padding-bottom:64px}
     .ek-kontrol-alani{width:100%;justify-content:center;flex-wrap:wrap}
-    #sayfayaGit,#favorilerBtn,#geceModuBtn{
-        flex:1;
-        min-width:110px;
-        min-height:48px;
-        font-size:14px;
-        padding:12px 10px;
-    }
-    .ayet-favori{
-        width:44px;
-        height:44px;
-        min-width:44px;
-        min-height:44px;
-        font-size:21px;
-        margin:0 6px;
-    }
+    #sayfayaGit,#favorilerBtn,#geceModuBtn{flex:1;min-width:105px}
     .favoriler-panel{
-        top:65px;
-        right:8px;
-        width:calc(100vw - 16px);
-        max-width:none;
-        padding:18px;
-        font-size:16px;
+        top:60px;
+        left:10px;
+        right:10px;
+        width:auto;
+        max-height:none;
+        height:calc(100vh - 145px);
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+        padding:16px;
+        box-sizing:border-box;
+    }
+    .favoriler-panel h3{
+        font-size:20px;
+        margin-bottom:14px;
     }
     .favori-satir{
-        padding:14px;
+        padding:13px 12px;
+        margin-bottom:9px;
         font-size:16px;
+        line-height:1.45;
     }
 }
 
@@ -1401,78 +1391,6 @@ body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
         position:relative;
         z-index:2001;
     }
-}
-
-
-/* =========================================================
-   MOBİL SON DÜZELTME: FAVORİLER + KONTROL KUTULARI
-   ========================================================= */
-@media(max-width:700px){
-  /* Sûre / Okuyucu / Dil / Meal kutuları artık çok küçük olmayacak. */
-  .kontroller > .sure-kontrol,
-  .kontroller > .okuyucu-kontrol.kompakt-secim,
-  .kontroller > .okuyucu-kontrol.dil-kontrol,
-  .kontroller > .okuyucu-kontrol.meal-secim-kontrol{
-    width:105px !important;
-    min-width:105px !important;
-    max-width:105px !important;
-    flex:0 0 105px !important;
-    height:46px !important;
-    min-height:46px !important;
-    padding:3px !important;
-    box-sizing:border-box !important;
-  }
-
-  .kontroller > .sure-kontrol .secim-etiket,
-  .kontroller > .sure-kontrol .sure-etiket,
-  .kontroller > .okuyucu-kontrol .secim-etiket{
-    min-height:40px !important;
-    font-size:12px !important;
-    padding:0 5px !important;
-  }
-
-  /* Sayfaya Git / Favoriler / Gece Modu daha rahat basılacak. */
-  .ek-kontrol-alani{
-    gap:7px !important;
-  }
-  .ek-kontrol-alani > button{
-    min-height:46px !important;
-    padding:10px 13px !important;
-    font-size:12px !important;
-    border-radius:13px !important;
-  }
-
-  /* Ayet yanındaki favori yıldızı parmakla rahat basılacak boyuta çıkar. */
-  .ayet-favori{
-    width:44px !important;
-    min-width:44px !important;
-    height:44px !important;
-    margin:0 5px !important;
-    font-size:20px !important;
-    border-width:2px !important;
-  }
-
-  /* Favoriler panelini ekranın üstünde, geniş ve görünür tut. */
-  .favoriler-panel{
-    position:fixed !important;
-    top:112px !important;
-    left:10px !important;
-    right:10px !important;
-    width:auto !important;
-    max-width:none !important;
-    max-height:65vh !important;
-    z-index:2147483646 !important;
-    padding:16px !important;
-    box-sizing:border-box !important;
-  }
-}
-
-/* JS ile açıldığında başka bir CSS kuralının paneli gizlemesini engelle. */
-.favoriler-panel.acik{
-  display:block !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  pointer-events:auto !important;
 }
 
 </style>
@@ -4490,10 +4408,8 @@ sayfaGitTamam.addEventListener("click",async()=>{
 sayfaInput.addEventListener("keydown",e=>{if(e.key==="Enter") sayfaGitTamam.click()});
 
 favorilerBtn.addEventListener("click",()=>{
-    const acik=!favorilerPanel.classList.contains("acik");
-    favorilerPanel.classList.toggle("acik",acik);
-    favorilerPanel.style.display=acik ? "block" : "none";
-    if(acik) favorileriGoster();
+    favorilerPanel.classList.toggle("acik");
+    if(favorilerPanel.classList.contains("acik")) favorileriGoster();
 });
 
 geceModuBtn.addEventListener("click",()=>{
