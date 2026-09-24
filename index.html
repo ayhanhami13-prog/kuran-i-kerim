@@ -703,12 +703,27 @@ body.gece-modu .favoriler-panel,body.gece-modu .sayfa-git-kutu{background:#242a2
 body.gece-modu .favoriler-panel h3,body.gece-modu .sayfa-git-kutu h3{color:#dce9df}
 body.gece-modu .favori-satir{background:#303630}
 
-/* Gece modunda sesli takip edilen ayet sarı yerine siyah vurgulansın. */
-body.gece-modu .ayet.okunuyor,
-body.gece-modu .meal-ayet.okunuyor{
-    background:#000 !important;
+/* GECE MODU: takip edilen ayet kesin olarak siyah görünsün. */
+body.gece-modu .sayfa .ayet.okunuyor,
+body.gece-modu .sayfa .ayet.okunuyor *{
+    background-color:#000 !important;
     color:#fff !important;
-    box-shadow:0 0 0 2px rgba(0,0,0,.65);
+}
+
+body.gece-modu .mealSayfa .meal-ayet.okunuyor,
+body.gece-modu .mealSayfa .meal-ayet.okunuyor *{
+    background-color:#000 !important;
+    color:#fff !important;
+}
+
+body.gece-modu .sayfa .ayet.okunuyor{
+    background:#000 !important;
+    box-shadow:0 0 0 2px rgba(0,0,0,.75) !important;
+}
+
+body.gece-modu .mealSayfa .meal-ayet.okunuyor{
+    background:#000 !important;
+    box-shadow:0 0 0 2px rgba(0,0,0,.75) !important;
 }
 
 body.gece-modu .meal-ayet.okunuyor .meal-ayet-no{
