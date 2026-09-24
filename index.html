@@ -596,6 +596,8 @@ body.gorunum-meal #sayfa{
     display:flex;
     align-items:center;
     gap:7px;
+    position:relative;
+    flex-wrap:wrap;
 }
 
 #sayfayaGit, #favorilerBtn, #geceModuBtn{
@@ -639,13 +641,14 @@ body.gorunum-meal #sayfa{
 
 .favoriler-panel{
     display:none;
-    position:fixed;
-    top:72px;
-    right:18px;
+    position:absolute;
+    top:calc(100% + 8px);
+    right:0;
     width:min(420px,calc(100vw - 30px));
-    max-height:70vh;
-    overflow:auto;
-    z-index:2000;
+    height:auto;
+    max-height:none;
+    overflow:visible;
+    z-index:99999;
     background:#fff;
     border:2px solid #b98c31;
     border-radius:16px;
@@ -654,7 +657,7 @@ body.gorunum-meal #sayfa{
 }
 .favoriler-panel.acik{display:block}
 .favoriler-panel h3{margin:0 0 12px;color:#173b2d}
-.favori-satir{padding:10px;border-radius:10px;margin-bottom:8px;background:#f8f4e8;cursor:pointer}
+.favori-satir{display:block;width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;margin-bottom:8px;background:#f8f4e8;cursor:pointer}
 .favori-satir:hover{background:#eee5ce}
 .favori-satir strong{color:#806d3b;margin-right:7px}
 
@@ -716,27 +719,50 @@ body.gece-modu .favori-satir{background:#303630}
     body{padding-bottom:64px}
     .ek-kontrol-alani{width:100%;justify-content:center;flex-wrap:wrap}
     #sayfayaGit,#favorilerBtn,#geceModuBtn{flex:1;min-width:105px}
-    .favoriler-panel{
-        top:60px;
-        left:10px;
-        right:10px;
-        width:auto;
-        max-height:none;
-        height:calc(100vh - 145px);
-        overflow-y:auto;
-        -webkit-overflow-scrolling:touch;
-        padding:16px;
-        box-sizing:border-box;
+}
+
+/* FAVORİLER: TELEFONDA PANEL SAYFAYI AŞAĞI DOĞRU GENİŞLETSİN */
+@media(max-width:700px){
+    .ek-kontrol-alani{
+        position:relative !important;
+        width:100% !important;
+        flex-wrap:wrap !important;
+        justify-content:center !important;
+        align-items:flex-start !important;
     }
-    .favoriler-panel h3{
-        font-size:20px;
-        margin-bottom:14px;
+
+    .ek-kontrol-alani .favoriler-panel{
+        position:static !important;
+        display:none;
+        flex:1 1 100% !important;
+        width:100% !important;
+        max-width:none !important;
+        height:auto !important;
+        max-height:none !important;
+        overflow:visible !important;
+        margin:6px 0 0 !important;
+        box-sizing:border-box !important;
+        z-index:99999 !important;
     }
+
+    .ek-kontrol-alani .favoriler-panel.acik{
+        display:block !important;
+    }
+
+    #favorilerListe{
+        display:block !important;
+        width:100% !important;
+        height:auto !important;
+        max-height:none !important;
+        overflow:visible !important;
+    }
+
     .favori-satir{
-        padding:13px 12px;
-        margin-bottom:9px;
-        font-size:16px;
-        line-height:1.45;
+        width:100% !important;
+        min-height:46px !important;
+        padding:12px !important;
+        margin-bottom:8px !important;
+        box-sizing:border-box !important;
     }
 }
 
@@ -1394,17 +1420,6 @@ body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
 }
 
 </style>
-
-<style>
-.meal-okuyucu-btn{cursor:pointer;}
-.meal-okuyucu-panel{display:flex;flex-direction:column;gap:5px;min-width:240px;padding:8px 10px;border:1px solid #cfd8d3;border-radius:10px;background:#fff;}
-.meal-okuyucu-panel span{font-weight:700;}
-.meal-okuyucu-panel select{padding:6px;border:1px solid #cfd8d3;border-radius:7px;background:#fff;}
-.meal-okuyucu-panel small{font-size:11px;color:#777;line-height:1.25;}
-body.gece-modu .meal-okuyucu-panel{background:#202824;border-color:#43534b;color:#e8eee9;}
-body.gece-modu .meal-okuyucu-panel select{background:#202824;color:#edf2ee;border-color:#43534b;}
-body.gece-modu .meal-okuyucu-panel small{color:#bbb;}
-</style>
 </head>
 
 <body>
@@ -1463,6 +1478,11 @@ body.gece-modu .meal-okuyucu-panel small{color:#bbb;}
         <button id="sayfayaGit">🔢 Sayfaya Git</button>
         <button id="favorilerBtn">☆ Favoriler</button>
         <button id="geceModuBtn">🌙 Gece Modu</button>
+
+        <div class="favoriler-panel" id="favorilerPanel">
+            <h3>⭐ Favori Ayetler</h3>
+            <div id="favorilerListe">Henüz favori ayet eklenmedi.</div>
+        </div>
     </div>
 
     <button type="button" class="ezber-toggle" id="ezberToggle">🧠 Ezber Modu <span id="ezberOk">▼</span></button>
@@ -1473,10 +1493,7 @@ body.gece-modu .meal-okuyucu-panel small{color:#bbb;}
 
 </div>
 
-<div class="favoriler-panel" id="favorilerPanel">
-    <h3>⭐ Favori Ayetler</h3>
-    <div id="favorilerListe">Henüz favori ayet eklenmedi.</div>
-</div>
+
 
 <div class="sayfa-git-panel" id="sayfaGitPanel">
     <div class="sayfa-git-kutu">
@@ -1980,7 +1997,6 @@ document.getElementById("dilSec");
 
 const mealSec =
 document.getElementById("mealSec");
-let AKTIF_MEAL_OKUYUCU = "yusuf";
 
 const gorunumBtn = document.getElementById("gorunumBtn");
 const gorunumPanel = document.getElementById("gorunumPanel");
@@ -2100,18 +2116,67 @@ function sayfaAraliginiAyarla(verses){
 
 async function okuyuculariYukle(){
 
-    try{
+    const kayitAnahtari =
+    "kuranOkuyucuListesi_" + String(SURE);
 
+    /*
+     * Uygulama kapatılıp açıldığında API anlık olarak cevap vermezse
+     * daha önce başarıyla alınmış okuyucu listesini kullan.
+     * Böylece kayıtlı okuyucu zorla AbdulBaset'e dönmez.
+     */
+    let kayitliListe = null;
+
+    try{
+        const kayit =
+        JSON.parse(localStorage.getItem(kayitAnahtari) || "null");
+
+        if(Array.isArray(kayit) && kayit.length){
+            kayitliListe = kayit;
+            OKUYUCULAR = kayit;
+        }
+    }catch(e){}
+
+    /*
+     * Önce mevcut kayıtlı listeyi ekrana koy.
+     * API daha sonra güncel listeyi getirirse aşağıda yenilenir.
+     */
+    if(Array.isArray(kayitliListe) && kayitliListe.length){
+        okuyucuSec.innerHTML="";
+
+        for(const x of kayitliListe){
+            const option=document.createElement("option");
+            option.value=String(x.readId);
+            option.textContent=x.name;
+            okuyucuSec.appendChild(option);
+        }
+
+        const kayitliReadId =
+        Number(localStorage.getItem("kuranOkuyucuReadId"));
+
+        const varsayilan =
+        OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
+        OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
+        OKUYUCULAR[0];
+
+        if(varsayilan){
+            OKUYUCU=varsayilan;
+            okuyucuSec.value=String(OKUYUCU.readId);
+        }
+    }else{
         okuyucuSec.innerHTML =
         '<option value="">Okuyucular yükleniyor...</option>';
+    }
+
+    try{
 
         /*
-         * MP3Quran API:
-         * Seçili sûreye uygun Hafs okuyuşları.
+         * Okuyucu listesini SURE filtresine API tarafında bağlamıyoruz.
+         * MP3Quran'ın kendi dokümanında sura parametresi isteğe bağlıdır.
+         * Tüm okuyuşları alıp seçili sûreyi moshaf.surah_list üzerinden
+         * tarayıcı tarafında filtreliyoruz.
          */
         const reciterUrl =
-        "https://mp3quran.net/api/v3/reciters" +
-        `?language=tr&sura=${SURE}&rewaya=1`;
+        "https://mp3quran.net/api/v3/reciters?language=tr";
 
         const timingReadsUrl =
         "https://mp3quran.net/api/v3/ayat_timing/reads";
@@ -2122,21 +2187,44 @@ async function okuyuculariYukle(){
             fetch(timingReadsUrl,{cache:"no-store"})
         ]);
 
-        if(!reciterCevap.ok || !timingCevap.ok)
-            throw new Error("Okuyucu listesi alınamadı.");
+        if(!reciterCevap.ok)
+            throw new Error("Okuyucu API " + reciterCevap.status);
 
         const reciterData =
         await reciterCevap.json();
 
-        const timingReads =
-        await timingCevap.json();
+        /*
+         * Timing endpoint'inin dönüşü dizi veya {reads:[]} / {data:[]}
+         * şeklinde gelebilir. Listeyi bunun biçimine bağımlı bırakma.
+         */
+        let zamanliIdler = new Set();
 
-        const zamanliIdler =
-        new Set(
-            (timingReads || [])
-            .map(x=>Number(x.id))
-            .filter(Number.isFinite)
-        );
+        if(timingCevap.ok){
+            try{
+                const timingData = await timingCevap.json();
+
+                const timingArray =
+                Array.isArray(timingData)
+                ? timingData
+                : Array.isArray(timingData?.reads)
+                    ? timingData.reads
+                    : Array.isArray(timingData?.data)
+                        ? timingData.data
+                        : [];
+
+                zamanliIdler = new Set(
+                    timingArray
+                    .map(x=>Number(
+                        x?.id ??
+                        x?.read_id ??
+                        x?.readId
+                    ))
+                    .filter(Number.isFinite)
+                );
+            }catch(e){
+                console.warn("Timing okuyucu listesi okunamadı:",e);
+            }
+        }
 
         const liste=[];
 
@@ -2144,148 +2232,145 @@ async function okuyuculariYukle(){
 
             for(const moshaf of (reciter.moshaf || [])){
 
-                const readId =
-                Number(moshaf.id);
+                const readId = Number(moshaf.id);
 
                 const sureler =
                 String(moshaf.surah_list || "")
                 .split(",")
-                .map(Number);
+                .map(x=>Number(x.trim()))
+                .filter(Number.isFinite);
 
-                /*
-                 * Ayet vurgulaması için zamanlaması bulunan
-                 * ve seçili sûreyi içeren okuyuşları göster.
-                 */
                 if(
-                    !zamanliIdler.has(readId) ||
-                    !sureler.includes(SURE)
+                    !Number.isFinite(readId) ||
+                    !moshaf.server ||
+                    !sureler.includes(Number(SURE))
                 ){
                     continue;
                 }
 
+                /*
+                 * Timing listesi başarıyla geldiyse sadece ayet zamanlaması
+                 * bulunan okuyuşları göster. Timing listesi boş/erişilemezse
+                 * API listesini tamamen çöpe atma; kayıtlı listeyi koru.
+                 */
+                if(zamanliIdler.size && !zamanliIdler.has(readId))
+                    continue;
+
                 liste.push({
                     readId,
                     name:
-                    reciter.name +
-                    " — " +
-                    (moshaf.name || "Murattal"),
-                    server:
-                    moshaf.server
+                        reciter.name +
+                        " — " +
+                        (moshaf.name || "Murattal"),
+                    server:moshaf.server,
+                    zamanlama:zamanliIdler.has(readId)
                 });
             }
         }
 
-        /*
-         * Mevcut Abdulbasit kaydını ilk sıraya al.
-         */
-        liste.sort((a,b)=>{
-
-            if(a.readId===DEFAULT_READ_ID) return -1;
-            if(b.readId===DEFAULT_READ_ID) return 1;
-
-            return a.name.localeCompare(
-                b.name,
-                "tr"
-            );
-        });
-
-        /*
-         * Aynı read ID tekrar etmesin.
-         */
+        /* Aynı read ID tek kez görünsün. */
         const benzersiz=[];
         const gorulen=new Set();
 
         for(const x of liste){
-
-            if(gorulen.has(x.readId))
-                continue;
-
+            if(gorulen.has(x.readId)) continue;
             gorulen.add(x.readId);
             benzersiz.push(x);
         }
 
-        const yusufMealOkuyucu = {
-            readId: -2,
-            name: "Yusuf Ziya Özkan — Elmalılı Hamdi Yazır (Türkçe Meal)",
-            server: ""
-        };
+        if(!benzersiz.length){
+            throw new Error("Seçili sûre için okuyucu bulunamadı.");
+        }
 
-        OKUYUCULAR=[yusufMealOkuyucu, ...benzersiz];
+        benzersiz.sort((a,b)=>{
+            if(a.readId===DEFAULT_READ_ID) return -1;
+            if(b.readId===DEFAULT_READ_ID) return 1;
+            if(a.zamanlama && !b.zamanlama) return -1;
+            if(!a.zamanlama && b.zamanlama) return 1;
+            return a.name.localeCompare(b.name,"tr");
+        });
+
+        OKUYUCULAR=benzersiz;
+
+        /* Başarılı listeyi sûre bazında sakla. */
+        localStorage.setItem(
+            kayitAnahtari,
+            JSON.stringify(OKUYUCULAR)
+        );
 
         okuyucuSec.innerHTML="";
 
-        if(!OKUYUCULAR.length){
-            throw new Error(
-                "Zamanlamalı okuyucu bulunamadı."
-            );
-        }
-
         for(const x of OKUYUCULAR){
-
-            const option =
-            document.createElement("option");
-
-            option.value =
-            String(x.readId);
-
-            option.textContent =
-            x.name;
-
+            const option=document.createElement("option");
+            option.value=String(x.readId);
+            option.textContent=x.name;
             okuyucuSec.appendChild(option);
         }
 
-        const kayitliReadId = Number(localStorage.getItem("kuranOkuyucuReadId"));
+        const kayitliReadId =
+        Number(localStorage.getItem("kuranOkuyucuReadId"));
+
         const varsayilan =
         OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
+        OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
         OKUYUCULAR[0];
 
         OKUYUCU=varsayilan;
-
-        okuyucuSec.value =
-        String(OKUYUCU.readId);
-
-        if(Number(OKUYUCU.readId) === -2){
-            mealOkuyucuAktif = true;
-            AKTIF_MEAL_OKUYUCU = "yusuf";
-        }else{
-            mealOkuyucuAktif = false;
-        }
+        okuyucuSec.value=String(OKUYUCU.readId);
 
     }catch(e){
 
-        console.error(
-            "Okuyucular yüklenemedi:",
-            e
-        );
+        console.error("Okuyucular yüklenemedi:",e);
 
         /*
-         * API listesi erişilemezse mevcut Abdulbasit
-         * ayarı çalışmaya devam etsin.
+         * EN ÖNEMLİ DÜZELTME:
+         * API açılışta geçici olarak başarısız olursa kayıtlı listeyi ve
+         * kayıtlı okuyucuyu silme/değiştirme. Eski kod burada doğrudan
+         * AbdulBaset'e dönüyordu; sorun bu yüzden sadece yeniden açılışta
+         * ortaya çıkıyordu.
          */
-        okuyucuSec.innerHTML =
-        '<option value="-2">Yusuf Ziya Özkan — Elmalılı Hamdi Yazır (Türkçe Meal)</option>' +
+        if(Array.isArray(OKUYUCULAR) && OKUYUCULAR.length){
+
+            okuyucuSec.innerHTML="";
+
+            for(const x of OKUYUCULAR){
+                const option=document.createElement("option");
+                option.value=String(x.readId);
+                option.textContent=x.name;
+                okuyucuSec.appendChild(option);
+            }
+
+            const kayitliReadId =
+            Number(localStorage.getItem("kuranOkuyucuReadId"));
+
+            const varsayilan =
+            OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
+            OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
+            OKUYUCULAR[0];
+
+            OKUYUCU=varsayilan;
+            okuyucuSec.value=String(OKUYUCU.readId);
+
+            return;
+        }
+
+        /* İlk kurulumda hiç kayıt yoksa yalnızca güvenli varsayılan. */
+        OKUYUCULAR=[{
+            readId:DEFAULT_READ_ID,
+            name:"AbdulBaset AbdulSamad",
+            server:"https://server7.mp3quran.net/basit/",
+            zamanlama:true
+        }];
+
+        okuyucuSec.innerHTML=
         '<option value="5">AbdulBaset AbdulSamad</option>';
 
-        const kayitli = Number(localStorage.getItem("kuranOkuyucuReadId"));
-        const fallbackReadId = kayitli === 5 ? 5 : -2;
-        okuyucuSec.value=String(fallbackReadId);
-        localStorage.setItem("kuranOkuyucuReadId", String(fallbackReadId));
+        okuyucuSec.value="5";
 
-        if(fallbackReadId === -2){
-            OKUYUCU={readId:-2,name:"Yusuf Ziya Özkan — Elmalılı Hamdi Yazır (Türkçe Meal)",server:""};
-            mealOkuyucuAktif=true;
-            AKTIF_MEAL_OKUYUCU="yusuf";
-        }else{
-            OKUYUCU={
-                readId:DEFAULT_READ_ID,
-                name:"AbdulBaset AbdulSamad",
-                server:"https://server7.mp3quran.net/basit/"
-            };
-            mealOkuyucuAktif=false;
-        }
+        OKUYUCU=OKUYUCULAR[0];
     }
-
 }
+
 
 
 async function mealleriYukle(){
@@ -3453,85 +3538,6 @@ async function ayeteGit(ayetNo, sureNo=SURE, otomatikDevam=false){
 
     try{
 
-        /* Meal Okuyucu aktifken ayete tıklama kesinlikle Arapça
-         * okuyucuyu başlatmamalı. Türkçe ses aynı ayete konumlanıp
-         * oradan devam etmeli. */
-        if(mealOkuyucuAktif){
-            sureNo = Number(sureNo) || SURE;
-            ayetNo = Number(ayetNo);
-            const okumayaDevamEdiyordu = !!oynuyor || !!otomatikDevam;
-
-            if(audio){
-                try{ audio.pause(); }catch(e){}
-            }
-            if(timer) cancelAnimationFrame(timer);
-            oynuyor=false;
-            temizle();
-
-            if(sureNo !== SURE){
-                SURE=sureNo;
-                if(sureSec) sureSec.value=String(SURE);
-                sayfaDegisti=true;
-                try{
-                    const cevap=await fetch(
-                        `https://api.quran.com/api/v4/verses/by_chapter/${SURE}?fields=page_number,verse_number&per_page=300`,
-                        {cache:"no-store"}
-                    );
-                    if(cevap.ok){
-                        const data=await cevap.json();
-                        const hedef=data.verses?.find(v=>Number(v.verse_number)===ayetNo) || data.verses?.[0];
-                        if(hedef?.page_number){
-                            SAYFA=Number(hedef.page_number);
-                            await mushafYukle();
-                        }
-                    }
-                }catch(e){
-                    console.warn("Meal ayeti için sayfa bulunamadı:",e);
-                }
-            }
-
-            try{
-                await mealSesiniHazirla(false);
-                if(!mealAudio) throw new Error("Meal sesi hazırlanamadı");
-                await mealZamanlariniOlustur(SURE, Number(mealAudio.duration));
-
-                let hedef=mealZamanlar.find(z=>Number(z.sure)===Number(sureNo) && Number(z.ayet)===ayetNo);
-                if(!hedef){
-                    /* Zamanlama verisi ağdan gelmediyse, mevcut sayfadaki ayet
-                       sırasına göre yaklaşık konum hesapla; ses yine başlasın. */
-                    const sayfaAyetleri=[...mealSayfa.querySelectorAll(`.meal-ayet[data-sure="${sureNo}"]`)]
-                        .map(el=>Number(el.dataset.ayet)).filter(Number.isFinite);
-                    const idx=sayfaAyetleri.indexOf(Number(ayetNo));
-                    if(idx>=0 && sayfaAyetleri.length){
-                        const parca=Number(mealAudio.duration)||0;
-                        hedef={baslangic: parca * idx / sayfaAyetleri.length};
-                    }else{
-                        hedef={baslangic:0};
-                    }
-                }
-
-                mealAudio.currentTime=Number(hedef.baslangic)||0;
-                mealAktifAyet=null;
-                okumaKonumunuKaydet(SURE, ayetNo);
-
-                if(okumayaDevamEdiyordu){
-                    await mealAudio.play();
-                    oynuyor=true;
-                    if(timer) cancelAnimationFrame(timer);
-                    mealTakipDongusu();
-                    mealTakibiniGuncelle();
-                    durum.textContent=`${MEAL_OKUYUCU_KAYNAKLARI[AKTIF_MEAL_OKUYUCU]?.name || "Meal Okuyucu"} — ${SURE}:${ayetNo} okunuyor...`;
-                }else{
-                    durum.textContent=`${MEAL_OKUYUCU_KAYNAKLARI[AKTIF_MEAL_OKUYUCU]?.name || "Meal Okuyucu"} — ${SURE}:${ayetNo} hazır. Oynat'a basınca başlayacak.`;
-                }
-                return;
-            }catch(mealErr){
-                console.error("Meal ayeti başlatma hatası:", mealErr);
-                durum.textContent="Meal ayeti başlatılamadı: " + (mealErr?.message || mealErr);
-                return;
-            }
-        }
-
         sureNo = Number(sureNo) || SURE;
         const okumayaDevamEdiyordu = !!oynuyor || !!otomatikDevam;
 
@@ -3678,12 +3684,6 @@ oynat.addEventListener(
 
         try{
 
-            if(mealOkuyucuAktif){
-                menuyuGizle();
-                await mealSesiniHazirla(true);
-                return;
-            }
-
             sesHazirla();
 
 
@@ -3813,14 +3813,6 @@ duraklat.addEventListener(
     "click",
     ()=>{
 
-        if(mealOkuyucuAktif){
-            if(mealAudio) mealAudio.pause();
-            oynuyor=false;
-            if(timer) cancelAnimationFrame(timer);
-            durum.textContent="Meal okuması duraklatıldı";
-            return;
-        }
-
         if(!audio)
             return;
 
@@ -3851,19 +3843,6 @@ duraklat.addEventListener(
 durdur.addEventListener(
     "click",
     ()=>{
-
-        if(mealOkuyucuAktif){
-            if(mealAudio) {
-                mealAudio.pause();
-                try{mealAudio.currentTime=0;}catch(e){}
-            }
-            oynuyor=false;
-            if(timer) cancelAnimationFrame(timer);
-            mealAktifAyet=null;
-            temizle();
-            durum.textContent="Hazır";
-            return;
-        }
 
         if(audio){
 
@@ -3904,351 +3883,6 @@ durdur.addEventListener(
 
 
 /* =========================================================
-   MEAL OKUYUCU SES MOTORU
-   ========================================================= */
-const MEAL_OKUYUCU_KAYNAKLARI = {
-    yusuf: {
-        name: "Yusuf Ziya Özkan — Elmalılı Hamdi Yazır (Türkçe Meal)",
-        archiveId: "Yusuf_Ziya_Ozkan_Turkce_Meal",
-        sourcePage: "https://can-ada.net/kuran-meali-yusuf-ziya-ozkan-m-elmalili-hamdi-yazir/"
-    }
-};
-
-let mealAudio = null;
-let mealAudioReader = null;
-let mealAudioFilesCache = {};
-let mealAudioKapsami = null;
-let mealAudioToken = 0;
-let mealOkuyucuAktif = false;
-let mealZamanlar = [];
-let mealAktifAyet = null;
-
-function mealAudioDurdur(){
-    if(mealAudio){
-        try{ mealAudio.pause(); }catch(e){}
-        mealAudio.removeAttribute("src");
-        try{ mealAudio.load(); }catch(e){}
-    }
-    mealAudio = null;
-    mealAudioReader = null;
-    mealAudioKapsami = null;
-}
-
-async function mealAudioDosyalariYukle(readerKey){
-    if(mealAudioFilesCache[readerKey]) return mealAudioFilesCache[readerKey];
-    const kaynak = MEAL_OKUYUCU_KAYNAKLARI[readerKey];
-    if(!kaynak) throw new Error("Meal okuyucu bulunamadı");
-
-    /*
-       Kaynak sitedeki gerçek cüz bağlantılarını sayfadan buluyoruz.
-       Önceki sürümde uydurma Archive.org dosya adları kullanıldığı için
-       "Failed to fetch" oluşuyordu.
-    */
-    const proxy = "https://api.allorigins.win/raw?url=";
-    const cevap = await fetch(proxy + encodeURIComponent(kaynak.sourcePage), {cache:"no-store"});
-    if(!cevap.ok) throw new Error("Meal kaynak sayfası alınamadı: " + cevap.status);
-    const html = await cevap.text();
-    const doc = new DOMParser().parseFromString(html,"text/html");
-    const sonuc = [];
-
-    doc.querySelectorAll("a[href]").forEach(a=>{
-        const metin = (a.textContent || "").replace(/\s+/g," ").trim();
-        const eslesme = metin.match(/(?:Kur[’']?an Meali\s*)?(\d{1,2})\.\s*cüz/i);
-        if(!eslesme) return;
-        const no = Number(eslesme[1]);
-        if(no<1 || no>30) return;
-        const url = new URL(a.getAttribute("href"), kaynak.sourcePage).href;
-        if(!sonuc.some(x=>x.no===no)) sonuc.push({no,url,baslik:metin});
-    });
-
-    sonuc.sort((a,b)=>a.no-b.no);
-    if(!sonuc.length) throw new Error("Kaynak sitede cüz ses bağlantıları bulunamadı");
-    mealAudioFilesCache[readerKey] = sonuc;
-    return sonuc;
-}
-
-function normalizeMealName(v){
-    return String(v||"")
-        .toLocaleLowerCase("tr-TR")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g,"")
-        .replace(/ı/g,"i")
-        .replace(/ğ/g,"g")
-        .replace(/ü/g,"u")
-        .replace(/ş/g,"s")
-        .replace(/ö/g,"o")
-        .replace(/ç/g,"c")
-        .replace(/[^a-z0-9]+/g," ")
-        .trim();
-}
-
-function mealSureAd(sureNo){
-    const x = SURELER.find(a=>Number(a[0])===Number(sureNo));
-    return x ? normalizeMealName(x[1]) : "";
-}
-
-async function mealCuzNoBul(){
-    try{
-        const cevap = await fetch(
-            `https://api.quran.com/api/v4/verses/by_page/${SAYFA}?fields=juz_number&per_page=50`,
-            {cache:"no-store"}
-        );
-        if(!cevap.ok) return null;
-        const data = await cevap.json();
-        const j = (data.verses||[]).map(v=>Number(v.juz_number)).find(Boolean);
-        return j || null;
-    }catch(e){
-        return null;
-    }
-}
-
-function mealCuzDosyasiBul(files,cuzNo){
-    if(!cuzNo) return null;
-    const n = String(cuzNo).padStart(2,"0");
-    const adaylar = files.filter(f=>{
-        const b=normalizeMealName(f.split("/").pop());
-        return new RegExp(`(^|[^0-9])0?${cuzNo}([^0-9]|$)`).test(b) ||
-               b.includes(`cuz ${cuzNo}`) || b.includes(`cuz${cuzNo}`) ||
-               b.includes(`cuz ${n}`) || b.includes(`cuz${n}`) ||
-               b.includes(`juz ${cuzNo}`) || b.includes(`juz${cuzNo}`) ||
-               b.includes(`juz ${n}`) || b.includes(`juz${n}`);
-    });
-    return adaylar[0] || null;
-}
-
-function mealSureDosyasiBul(files,sureNo){
-    const ad=mealSureAd(sureNo);
-    const n=String(sureNo).padStart(3,"0");
-    return files.find(f=>{
-        const b=normalizeMealName(f.split("/").pop());
-        return b.includes(ad) ||
-               new RegExp(`(^|[^0-9])${sureNo}([^0-9]|$)`).test(b) ||
-               b.includes(n);
-    }) || null;
-}
-
-async function mealAudioUrliniBul(readerKey,sureNo){
-    const files=await mealAudioDosyalariYukle(readerKey);
-    const cuz=await mealCuzNoBul();
-    const kayit=files.find(x=>Number(x.no)===Number(cuz));
-    if(!kayit) throw new Error(`${cuz||"İlgili"}. cüz ses bağlantısı bulunamadı`);
-
-    const proxy = "https://api.allorigins.win/raw?url=";
-    const cevap = await fetch(proxy + encodeURIComponent(kayit.url), {cache:"no-store"});
-    if(!cevap.ok) throw new Error("Cüz ses sayfası alınamadı: " + cevap.status);
-    const html = await cevap.text();
-    const doc = new DOMParser().parseFromString(html,"text/html");
-
-    let audioUrl = "";
-    const kaynaklar = [...doc.querySelectorAll("audio[src], audio source[src], source[src]")];
-    for(const el of kaynaklar){
-        const src=el.getAttribute("src")||"";
-        if(/\.mp3(?:[?#]|$)/i.test(src)){ audioUrl=new URL(src,kayit.url).href; break; }
-    }
-    if(!audioUrl){
-        for(const a of doc.querySelectorAll("a[href]")){
-            const href=a.getAttribute("href")||"";
-            if(/\.mp3(?:[?#]|$)/i.test(href)){ audioUrl=new URL(href,kayit.url).href; break; }
-        }
-    }
-    if(!audioUrl){
-        const m=html.match(/https?:[^\"']+?\.mp3(?:\?[^\"']*)?/i);
-        if(m) audioUrl=m[0].replace(/&amp;/g,"&");
-    }
-    if(!audioUrl) throw new Error("Cüz sayfasında MP3 bağlantısı bulunamadı");
-
-    mealAudioKapsami={tip:"cuz", sureNo:Number(sureNo), cuzNo:Number(cuz), kaynakUrl:kayit.url};
-    return audioUrl;
-}
-
-async function mealZamanlariniOlustur(sureNo, duration){
-    mealZamanlar = [];
-    mealAktifAyet = null;
-    if(!Number.isFinite(Number(duration)) || duration <= 0) return;
-
-    try{
-        let verses = [];
-
-        /* Önce ekranda gerçekten bulunan meal ayetlerini kullan.
-           Böylece Quran.com erişimi olmasa bile takip çalışır. */
-        const els = [...mealSayfa.querySelectorAll(`.meal-ayet[data-sure]`)];
-        verses = els.map(el=>({
-            sure:Number(el.dataset.sure),
-            ayet:Number(el.dataset.ayet),
-            metin:el.innerText.replace(/^\s*\d+\s*/,"").trim()
-        })).filter(x=>Number.isFinite(x.sure) && Number.isFinite(x.ayet));
-
-        /* Aynı sayfada ayet yoksa Quran.com'dan yedek veri al.
-           Bu istek başarısız olursa ses yine çalışmaya devam eder. */
-        if(!verses.length){
-            try{
-                const endpoint = `https://api.quran.com/api/v4/verses/by_chapter/${sureNo}?fields=verse_number&per_page=300`;
-                const cevap=await fetch(endpoint,{cache:"no-store"});
-                if(cevap.ok){
-                    const data=await cevap.json();
-                    verses=(data.verses||[]).map(v=>({
-                        sure:Number(sureNo), ayet:Number(v.verse_number), metin:String(v.verse_number)
-                    }));
-                }
-            }catch(e){
-                console.warn("Meal zamanlama yedek verisi alınamadı:",e);
-            }
-        }
-
-        if(mealAudioKapsami?.tip === "cuz"){
-            verses=verses.filter(v=>Number(v.sure)>0 && Number(v.ayet)>0);
-        }else{
-            verses=verses.filter(v=>Number(v.sure)===Number(sureNo));
-        }
-        if(!verses.length) return;
-
-        const agirliklar=verses.map(v=>Math.max(20, String(v.metin||"").replace(/\s+/g,"").length));
-        const toplam=agirliklar.reduce((a,b)=>a+b,0)||1;
-        let imlec=0;
-        verses.forEach((v,i)=>{
-            const baslangic=imlec;
-            const pay=duration*agirliklar[i]/toplam;
-            imlec+=pay;
-            mealZamanlar.push({sure:v.sure,ayet:v.ayet,baslangic,bitis:i===verses.length-1?duration:imlec});
-        });
-    }catch(e){
-        console.warn("Meal ayet zamanları oluşturulamadı:",e);
-    }
-}
-
-function mealTakibiniGuncelle(){
-    if(!mealOkuyucuAktif || !mealAudio || !oynuyor) return;
-
-    const saniye = Number(mealAudio.currentTime) || 0;
-    const aktif = mealZamanlar.find(z=>
-        saniye >= z.baslangic && saniye < z.bitis
-    ) || (mealZamanlar.length && saniye >= mealZamanlar[mealZamanlar.length-1].baslangic
-        ? mealZamanlar[mealZamanlar.length-1] : null);
-
-    if(!aktif || mealAktifAyet === aktif.ayet) return;
-
-    temizle();
-
-    if(Number(aktif.sure) !== Number(SURE)){
-        SURE = Number(aktif.sure);
-        if(sureSec) sureSec.value=String(SURE);
-    }
-
-    const arapcaHedefler = document.querySelectorAll(
-        `.ayet[data-sure="${SURE}"][data-ayet="${aktif.ayet}"]`
-    );
-    arapcaHedefler.forEach(el=>el.classList.add("okunuyor"));
-
-    const mealHedefler = mealSayfa.querySelectorAll(
-        `.meal-ayet[data-sure="${SURE}"][data-ayet="${aktif.ayet}"]`
-    );
-    mealHedefler.forEach(el=>el.classList.add("okunuyor"));
-
-    const hedef = document.body.classList.contains("gorunum-meal")
-        ? mealHedefler[0]
-        : arapcaHedefler[0];
-
-    if(hedef){
-        hedef.scrollIntoView({behavior:"smooth", block:"center"});
-    }
-
-    mealAktifAyet = aktif.ayet;
-    okumaKonumunuKaydet(SURE, aktif.ayet);
-    const kaynak = MEAL_OKUYUCU_KAYNAKLARI[AKTIF_MEAL_OKUYUCU];
-    durum.textContent = `${kaynak ? kaynak.name : "Meal Okuyucu"} — ${SURE}:${aktif.ayet} okunuyor...`;
-}
-
-function mealTakipDongusu(){
-    if(!mealOkuyucuAktif || !oynuyor || !mealAudio) return;
-    mealTakibiniGuncelle();
-    timer = requestAnimationFrame(mealTakipDongusu);
-}
-
-async function mealSesiniHazirla(oynatmayaBasla=true){
-    const readerKey = AKTIF_MEAL_OKUYUCU;
-    const kaynak = MEAL_OKUYUCU_KAYNAKLARI[readerKey];
-    if(!kaynak) return false;
-
-    const token=++mealAudioToken;
-    durum.textContent = kaynak.name + " sesi hazırlanıyor...";
-
-    const url=await mealAudioUrliniBul(readerKey,SURE);
-    if(token!==mealAudioToken) return false;
-
-    if(!mealAudio || mealAudioReader!==readerKey){
-        mealAudioDurdur();
-        mealAudio=new Audio();
-        mealAudio.preload="auto";
-        mealAudioReader=readerKey;
-        mealAudio.addEventListener("ended", async()=>{
-            if(!mealOkuyucuAktif) return;
-            const sonraki = Number(SURE)+1;
-            if(sonraki>114){
-                oynuyor=false;
-                durum.textContent="Meal okuması tamamlandı.";
-                return;
-            }
-            SURE=sonraki;
-            mealZamanlar = [];
-            mealAktifAyet = null;
-            if(sureSec) sureSec.value=String(SURE);
-            try{
-                const cevap=await fetch(`https://api.quran.com/api/v4/verses/by_chapter/${SURE}?fields=page_number&per_page=5`,{cache:"no-store"});
-                const data=await cevap.json();
-                const hedef=Number(data.verses?.[0]?.page_number);
-                if(hedef){
-                    SAYFA=hedef;
-                    sayfaDegisti=true;
-                    await mushafYukle();
-                }
-                await mealSesiniHazirla(true);
-            }catch(e){
-                console.error(e);
-                oynuyor=false;
-                durum.textContent="Sonraki sûrenin Meal sesi başlatılamadı.";
-            }
-        });
-        mealAudio.addEventListener("error",()=>{
-            durum.textContent=kaynak.name+" sesi yüklenemedi.";
-        });
-    }
-
-    mealAudio.pause();
-    mealAudio.src=url;
-    mealAudio.load();
-
-    /* Ses kaynağı yüklendiğinde duration hazır olmadan dönme.
-       Özellikle ayete tıklamada false ile çağrıldığında da
-       ayet zamanlarını hesaplayabilmek için metadata beklenmeli. */
-    await new Promise((resolve,reject)=>{
-        if(mealAudio.readyState>=1 && Number.isFinite(Number(mealAudio.duration)) && Number(mealAudio.duration)>0){
-            resolve();
-            return;
-        }
-        const ok=()=>{temizle();resolve()};
-        const er=()=>{temizle();reject(new Error("Meal sesi yüklenemedi"))};
-        const temizle=()=>{
-            mealAudio.removeEventListener("loadedmetadata",ok);
-            mealAudio.removeEventListener("durationchange",ok);
-            mealAudio.removeEventListener("error",er);
-        };
-        mealAudio.addEventListener("loadedmetadata",ok,{once:true});
-        mealAudio.addEventListener("durationchange",ok,{once:true});
-        mealAudio.addEventListener("error",er,{once:true});
-    });
-
-    if(!oynatmayaBasla) return true;
-
-    await mealAudio.play();
-    oynuyor=true;
-    await mealZamanlariniOlustur(SURE, Number(mealAudio.duration));
-    if(timer) cancelAnimationFrame(timer);
-    mealTakipDongusu();
-    durum.textContent=kaynak.name+" okuyor...";
-    return true;
-}
-
-/* =========================================================
    OKUYUCU DEĞİŞTİRME
    ========================================================= */
 
@@ -4261,7 +3895,7 @@ okuyucuSec.addEventListener(
 
         const secilen =
         OKUYUCULAR.find(
-            x=>Number(x.readId)===readId
+            x=>x.readId===readId
         );
 
         if(!secilen)
@@ -4285,15 +3919,6 @@ okuyucuSec.addEventListener(
 
         OKUYUCU=secilen;
         localStorage.setItem("kuranOkuyucuReadId", String(OKUYUCU.readId));
-
-        if(Number(OKUYUCU.readId) === -2){
-            mealOkuyucuAktif=true;
-            AKTIF_MEAL_OKUYUCU="yusuf";
-            localStorage.setItem("kuranMealOkuyucu", "yusuf");
-        }else{
-            mealOkuyucuAktif=false;
-            mealAudioDurdur();
-        }
 
         durum.textContent =
         OKUYUCU.name +
@@ -4524,9 +4149,14 @@ geceModunuUygula();
 favorileriGoster();
 
 (async()=>{
-    await okuyuculariYukle();
+    /*
+     * Önce kaldığımız sayfa/sûreyi ve mushafı yükle.
+     * Mushaf API SURE değerini kesinleştirdikten sonra okuyucu listesini
+     * yüklemek, yeniden açılışta yanlış sûrenin listesinin gelmesini önler.
+     */
     await mealleriYukle();
     await mushafYukle();
+    await okuyuculariYukle();
 })();
 
 </script>
