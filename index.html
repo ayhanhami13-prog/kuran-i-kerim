@@ -1419,6 +1419,25 @@ body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
     }
 }
 
+
+/* FAVORILER MOBIL: normal sayfa akisinda gorunur */
+@media(max-width:700px){
+  body > #favorilerPanel{
+    display:none !important;
+    position:relative !important;
+    top:auto !important; left:auto !important; right:auto !important;
+    width:calc(100% - 16px) !important; max-width:none !important;
+    height:auto !important; max-height:none !important;
+    min-height:120px !important; overflow:visible !important;
+    margin:12px 8px 20px !important; padding:16px !important;
+    clear:both !important; z-index:1 !important;
+  }
+  body > #favorilerPanel.acik{display:block !important}
+  body > #favorilerPanel #favorilerListe{
+    display:block !important; height:auto !important;
+    max-height:none !important; overflow:visible !important;
+  }
+}
 </style>
 </head>
 
@@ -1479,10 +1498,7 @@ body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
         <button id="favorilerBtn">☆ Favoriler</button>
         <button id="geceModuBtn">🌙 Gece Modu</button>
 
-        <div class="favoriler-panel" id="favorilerPanel">
-            <h3>⭐ Favori Ayetler</h3>
-            <div id="favorilerListe">Henüz favori ayet eklenmedi.</div>
-        </div>
+
     </div>
 
     <button type="button" class="ezber-toggle" id="ezberToggle">🧠 Ezber Modu <span id="ezberOk">▼</span></button>
@@ -1494,6 +1510,12 @@ body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
 </div>
 
 
+
+<!-- Favoriler sabit menunun disinda: telefonda asagi dogru acilir -->
+<div class="favoriler-panel" id="favorilerPanel">
+    <h3>⭐ Favori Ayetler</h3>
+    <div id="favorilerListe">Henüz favori ayet eklenmedi.</div>
+</div>
 
 <div class="sayfa-git-panel" id="sayfaGitPanel">
     <div class="sayfa-git-kutu">
@@ -4034,7 +4056,19 @@ sayfaInput.addEventListener("keydown",e=>{if(e.key==="Enter") sayfaGitTamam.clic
 
 favorilerBtn.addEventListener("click",()=>{
     favorilerPanel.classList.toggle("acik");
-    if(favorilerPanel.classList.contains("acik")) favorileriGoster();
+    const acildi=favorilerPanel.classList.contains("acik");
+    favorilerBtn.setAttribute("aria-expanded",String(acildi));
+    if(acildi){
+        favorileriGoster();
+        if(window.innerWidth<=700){
+            if(kontroller) kontroller.classList.add("menuler-gizli");
+            if(menuToggle){
+                menuToggle.setAttribute("aria-expanded","false");
+                menuToggle.textContent="☰ Menü";
+            }
+            requestAnimationFrame(()=>favorilerPanel.scrollIntoView({behavior:"smooth",block:"start"}));
+        }
+    }
 });
 
 geceModuBtn.addEventListener("click",()=>{
