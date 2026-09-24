@@ -2577,30 +2577,75 @@ function ezberAudioOlustur(){
     ezberAudio.preload="auto";
 }
 
+function ezberGorunurAyetBul(ayetNo, sureNo=ezberSureNo){
+    const seciciler = document.body.classList.contains("gorunum-meal")
+        ? [`.meal-ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"]`]
+        : [`.ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"]`];
+
+    for(const secici of seciciler){
+        const elemanlar = document.querySelectorAll(secici);
+        for(const el of elemanlar){
+            const stil = window.getComputedStyle(el);
+            if(stil.display !== "none" && stil.visibility !== "hidden" && el.getClientRects().length){
+                return el;
+            }
+        }
+    }
+
+    return null;
+}
+
+function ezberAyeteKaydir(ayetNo, sureNo=ezberSureNo){
+    /* mushafYukle() DOM'u yeniden oluşturduğu için tek bir requestAnimationFrame
+       yeterli olmayabiliyor. İki frame + kısa gecikme ile yeni sayfanın ölçüsü
+       kesinleştikten sonra hedef ayeti ortalıyoruz. */
+    const kaydir = ()=>{
+        const hedef = ezberGorunurAyetBul(ayetNo, sureNo);
+        if(!hedef) return;
+
+        try{
+            const rect = hedef.getBoundingClientRect();
+            const hedefTop = Math.max(0,
+                window.scrollY + rect.top - (window.innerHeight / 2) + (rect.height / 2)
+            );
+
+            /* Normal okuma modundaki scrollIntoView davranışını koru. */
+            hedef.scrollIntoView({
+                behavior:"smooth",
+                block:"center",
+                inline:"nearest"
+            });
+
+            /* Bazı mobil/tam sayfa yerleşimlerinde scrollIntoView hedefi
+               doğru kaydırıcıya vermeyebiliyor. Sayfanın kendisini de aynı
+               hedefe taşıyoruz. */
+            if(!document.body.classList.contains("tam-sayfa-modu")){
+                window.scrollTo({top:hedefTop, behavior:"smooth"});
+            }
+        }catch(e){
+            console.error("Ezber ayet kaydırma hatası:", e);
+        }
+    };
+
+    requestAnimationFrame(()=>{
+        requestAnimationFrame(kaydir);
+    });
+    setTimeout(kaydir, 120);
+}
+
 function ezberVurgula(ayetNo, sureNo=ezberSureNo){
     document.querySelectorAll(".ayet.okunuyor,.meal-ayet.okunuyor")
         .forEach(el=>el.classList.remove("okunuyor"));
 
+    const hedef = ezberGorunurAyetBul(ayetNo, sureNo);
     const hedefler = document.querySelectorAll(
         `.ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"], .meal-ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"]`
     );
 
     hedefler.forEach(el=>el.classList.add("okunuyor"));
 
-    /* Normal okuma modundaki gibi ezberde de aktif ayet ekrana otomatik
-       gelsin. Yeni ayete geçildikçe sayfa kullanıcı tarafından elle
-       kaydırılmak zorunda kalmasın. */
-    if(hedefler.length){
-        const hedef = hedefler[0];
-        requestAnimationFrame(()=>{
-            try{
-                hedef.scrollIntoView({
-                    behavior:"smooth",
-                    block:"center",
-                    inline:"nearest"
-                });
-            }catch(e){}
-        });
+    if(hedef){
+        ezberAyeteKaydir(ayetNo, sureNo);
     }
 }
 
@@ -2763,7 +2808,6 @@ async function ezberiBaslat(){
         secilenSureyiKoru = true;
         sayfaDegisti = true;
         await mushafYukle();
-        try{ window.scrollTo({top:0, behavior:"smooth"}); }catch(e){}
 
         await ezberZamanlariniYukle();
         ezberAudioOlustur();
