@@ -2607,6 +2607,55 @@ async function ezberAyetOynat(){
         return ezberAyetOynat();
     }
 
+    /*
+     * EZBER MODU SAYFA TAKİBİ
+     * Ezber sesi normal okuyucudan ayrı çalıştığı için normal takipEt()
+     * burada devreye girmez. Seçilen ayet yeni bir mushaf sayfasındaysa
+     * önce o sayfayı yükle, sonra aynı ezber sesini kaldığı yerden sürdür.
+     */
+    const ekrandakiAyet = document.querySelector(
+        `.ayet[data-sure="${ezberSureNo}"][data-ayet="${z.ayet}"]`
+    );
+
+    if(!ekrandakiAyet){
+        try{
+            const cevap = await fetch(
+                `https://api.quran.com/api/v4/verses/by_chapter/${ezberSureNo}?fields=verse_number,page_number,verse_key&per_page=300`,
+                {cache:"no-store"}
+            );
+
+            if(!cevap.ok)
+                throw new Error("Ezber ayetinin sayfası alınamadı.");
+
+            const data = await cevap.json();
+            const hedef = (data.verses || []).find(
+                v => Number(v.verse_number) === Number(z.ayet)
+            );
+            const hedefSayfa = Number(hedef && hedef.page_number);
+
+            if(!hedefSayfa)
+                throw new Error("Ezber ayetinin sayfası bulunamadı.");
+
+            if(SAYFA !== hedefSayfa){
+                SAYFA = hedefSayfa;
+                SURE = Number(ezberSureNo);
+                if(sureSec) sureSec.value = String(SURE);
+                sayfaDegisti = true;
+                konumuKaydet();
+
+                /* Normal okuyucu sesine dokunma. Sadece mushaf ekranını yenile. */
+                await mushafYukle();
+
+                /* Sayfa yenilendikten sonra ezber hâlâ aktif kalsın. */
+                if(!ezberAktif) return;
+            }
+        }catch(e){
+            console.error("Ezber sayfa takip hatası:", e);
+            ezberDurum.textContent =
+                "Ezber sayfası yüklenemedi; ses devam ediyor.";
+        }
+    }
+
     ezberVurgula(z.ayet);
     ezberDurum.textContent =
         `${ezberSure.value ? ezberSure.options[ezberSure.selectedIndex].textContent : "Sûre"} — ` +
