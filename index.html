@@ -624,20 +624,22 @@ body.gorunum-meal #sayfa{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    width:25px;
+    min-width:28px;
     height:25px;
+    padding:0 6px;
     margin:0 4px;
-    border:1px solid #c5aa55;
-    border-radius:50%;
-    background:#fffaf0;
-    color:#a67c16;
-    font-size:14px;
+    border:1px solid #2e8b57;
+    border-radius:7px;
+    background:#f1fff6;
+    color:#168a45;
+    font-size:13px;
+    font-weight:700;
     cursor:pointer;
     vertical-align:middle;
     transition:.15s ease;
 }
-.ayet-favori:hover{transform:scale(1.08);background:#fff2c7}
-.ayet-favori.aktif{background:#f3c64f;color:#fff;border-color:#d0a32f}
+.ayet-favori:hover{transform:scale(1.08);background:#dcf8e8}
+.ayet-favori.aktif{background:#dcf8e8;color:#168a45;border-color:#2e8b57}
 
 .favoriler-panel{
     display:none;
@@ -1818,16 +1820,17 @@ function okumaKonumunuKaydet(sureNo=SURE, ayetNo=aktifAyet){
     localStorage.setItem("kuranSonAyet", String(Number(ayetNo)));
 }
 
-function favoriMi(ayet){
-    return favoriAyetler.some(x => Number(x.sure)===SURE && Number(x.ayet)===Number(ayet));
+function favoriMi(ayet, sureNo=SURE){
+    return favoriAyetler.some(x => Number(x.sure)===Number(sureNo) && Number(x.ayet)===Number(ayet));
 }
 
-function favoriyiDegistir(ayet){
+function favoriyiDegistir(ayet, sureNo=SURE, sayfaNo=SAYFA){
     const no=Number(ayet);
-    if(favoriMi(no)){
-        favoriAyetler=favoriAyetler.filter(x => !(Number(x.sure)===SURE && Number(x.ayet)===no));
+    const sure=Number(sureNo);
+    if(favoriMi(no, sure)){
+        favoriAyetler=favoriAyetler.filter(x => !(Number(x.sure)===sure && Number(x.ayet)===no));
     }else{
-        favoriAyetler.push({sure:SURE,ayet:no,sayfa:SAYFA});
+        favoriAyetler.push({sure:sure,ayet:no,sayfa:Number(sayfaNo)});
     }
     localStorage.setItem("kuranFavoriAyetler",JSON.stringify(favoriAyetler));
     favorileriGoster();
@@ -1836,8 +1839,9 @@ function favoriyiDegistir(ayet){
 
 function mushafFavorileriniGuncelle(){
     document.querySelectorAll(".ayet-favori").forEach(btn=>{
-        const aktif=favoriMi(btn.dataset.ayet);
-        btn.textContent=aktif ? "★" : "☆";
+        const aktif=favoriMi(btn.dataset.ayet, btn.dataset.sure || SURE);
+        /* Favori düğmesinde yıldız yerine doğrudan ayet numarasını göster. */
+        btn.textContent=String(btn.dataset.ayet || "");
         btn.classList.toggle("aktif",aktif);
         btn.title=aktif ? "Favorilerden çıkar" : "Favorilere ekle";
     });
@@ -1852,7 +1856,9 @@ function favorileriGoster(){
     [...favoriAyetler].sort((a,b)=>a.ayet-b.ayet).forEach(x=>{
         const d=document.createElement("div");
         d.className="favori-satir";
-        d.innerHTML=`<strong>En'âm ${x.ayet}. ayet</strong> <span>(Sayfa ${x.sayfa})</span>`;
+        const sureBilgi = SURELER.find(s => Number(s[0]) === Number(x.sure));
+        const sureAdi = sureBilgi ? sureBilgi[1] : (x.sure + ". Sûre");
+        d.innerHTML=`<strong>${sureAdi} ${x.ayet}. ayet</strong> <span>(Sayfa ${x.sayfa})</span>`;
         d.addEventListener("click",()=>{
             favorilerPanel.classList.remove("acik");
             if(Number(x.sayfa)!==SAYFA){
@@ -3000,20 +3006,21 @@ async function mushafYukle(){
 
         let mushafSonSure = null;
 
+        /*
+         * Ayet birden fazla mushaf satırına taşabilir.
+         * Her satırda metnin devamını göstermek için ayrı .ayet spanı
+         * oluşturuyoruz; ancak FAVORİ butonunu aynı ayet için yalnızca
+         * ilk görüldüğü yerde bir kez ekliyoruz.
+         */
+        const favoriButonuEklenen = new Set();
+
         for(const lineNo of satirNo){
 
-            const satir =
-            document.createElement("div");
+            const satir = document.createElement("div");
+            satir.className = "satir";
 
-            satir.className =
-            "satir";
-
-
-            let aktifAyet=null;
-            let aktifSureAyetKey=null;
-
-            let aktifSpan=null;
-
+            let aktifSpan = null;
+            let satirdakiSonSureAyetKey = null;
 
             for(const word of satirlar[lineNo]){
 
@@ -3031,61 +3038,53 @@ async function mushafYukle(){
 
                 const sureAyetKey = word.sure + ":" + word.ayet;
 
-                if(sureAyetKey !== aktifSureAyetKey){
+                /*
+                 * Aynı ayet yeni bir satıra taşınmışsa da burada yeni bir
+                 * metin spanı oluşturulur. Böylece aktifSpan hiçbir zaman
+                 * null kalmaz ve ayetin devamı kaybolmaz.
+                 */
+                if(sureAyetKey !== satirdakiSonSureAyetKey){
 
-                    aktifSureAyetKey = sureAyetKey;
-                    aktifAyet = word.ayet;
+                    satirdakiSonSureAyetKey = sureAyetKey;
 
+                    aktifSpan = document.createElement("span");
+                    aktifSpan.className = "ayet";
+                    aktifSpan.dataset.ayet = word.ayet;
+                    aktifSpan.dataset.sure = word.sure;
 
-                    aktifSpan =
-                    document.createElement("span");
+                    /*
+                     * Aynı ayet birden fazla satıra taşınsa bile yalnızca
+                     * ilk parçasına tek bir favori butonu koy.
+                     */
+                    if(!favoriButonuEklenen.has(sureAyetKey)){
+                        favoriButonuEklenen.add(sureAyetKey);
 
+                        const favoriBtn = document.createElement("button");
+                        favoriBtn.className = "ayet-favori";
+                        favoriBtn.dataset.ayet = word.ayet;
+                        favoriBtn.dataset.sure = word.sure;
+                        favoriBtn.textContent = String(word.ayet);
+                        favoriBtn.title = favoriMi(word.ayet, word.sure) ? "Favorilerden çıkar" : "Favorilere ekle";
+                        favoriBtn.addEventListener("click", ev=>{
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            favoriyiDegistir(word.ayet, word.sure, SAYFA);
+                        });
 
-                    aktifSpan.className =
-                    "ayet";
+                        /* Favori düğmesi ayetin metninin içine değil,
+                           ayet spanının hemen önüne kardeş eleman olarak eklenir.
+                           Böylece satıra taşan aynı ayette yalnızca ilk parçada
+                           tek bir favori düğmesi görünür. */
+                        satir.appendChild(favoriBtn);
+                    }
 
-
-                    aktifSpan.dataset.ayet =
-                    word.ayet;
-
-                    aktifSpan.dataset.sure =
-                    word.sure;
-
-                    const favoriBtn=document.createElement("button");
-                    favoriBtn.className="ayet-favori";
-                    favoriBtn.dataset.ayet=word.ayet;
-                    favoriBtn.textContent=favoriMi(word.ayet) ? "★" : "☆";
-                    favoriBtn.title=favoriMi(word.ayet) ? "Favorilerden çıkar" : "Favorilere ekle";
-                    favoriBtn.addEventListener("click",ev=>{
-                        ev.stopPropagation();
-                        favoriyiDegistir(word.ayet);
-                    });
-                    satir.appendChild(favoriBtn);
-
-
-                    satir.appendChild(
-                        aktifSpan
-                    );
-
+                    satir.appendChild(aktifSpan);
                 }
 
-
-                const kelime =
-                document.createElement("span");
-
-
-                kelime.className =
-                "kelime";
-
-
-                kelime.textContent =
-                word.text + " ";
-
-
-                aktifSpan.appendChild(
-                    kelime
-                );
-
+                const kelime = document.createElement("span");
+                kelime.className = "kelime";
+                kelime.textContent = word.text + " ";
+                aktifSpan.appendChild(kelime);
             }
 
 
