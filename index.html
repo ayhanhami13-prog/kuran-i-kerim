@@ -846,6 +846,10 @@ body.gece-modu .favori-satir{background:#303630}
     cursor:pointer;
     z-index:5;
     font-size:0;
+    /* Bazı Android WebView sürümlerinde tamamen görünmez (opacity:0)
+       select native listeyi açmayabiliyor. Çok düşük opacity ile
+       select tıklanabilir kalır ve native seçenek penceresi açılır. */
+    opacity:.01;
 }
 
 .sure-kontrol #sureSec option,
@@ -886,6 +890,16 @@ body.gece-modu .favori-satir{background:#303630}
 #dilSec,
 #mealSec{
     overflow:hidden;
+}
+
+/* Android WebView / Chrome: kompakt seçim kutuları native listeyi açsın. */
+.okuyucu-kontrol.kompakt-secim #okuyucuSec,
+.sure-kontrol #sureSec,
+.dil-kontrol #dilSec,
+.meal-secim-kontrol #mealSec{
+    opacity:.01 !important;
+    pointer-events:auto !important;
+    -webkit-appearance:menulist !important;
 }
 
 /* Küçük ekranlarda da tek tek kompakt butonlar halinde kalırlar. */
@@ -2067,43 +2081,35 @@ function sayfaAraliginiAyarla(verses){
 
 async function okuyuculariYukle(){
 
+    const KAYIT_ANAHTARI = "kuranOkuyucularListesi";
+
     try{
 
         okuyucuSec.innerHTML =
         '<option value="">Okuyucular yükleniyor...</option>';
 
         /*
-         * MP3Quran API:
-         * Seçili sûreye uygun Hafs okuyuşları.
+         * ÖNEMLİ:
+         * Okuyucu listesini doldurmak için ayet_timing/reads API'sine
+         * artık bağımlı değiliz. Bu API cevap vermezse eskiden catch'e
+         * düşüyor ve menüde sadece Abdülbaset kalıyordu.
+         *
+         * Okuyucular, seçili sûreyi okuyabilen MP3Quran kayıtlarından
+         * doğrudan alınır. Ayet zamanlaması gerektiğinde oynatma sırasında
+         * ayrıca istenir.
          */
         const reciterUrl =
         "https://mp3quran.net/api/v3/reciters" +
-        `?language=tr&sura=${SURE}&rewaya=1`;
+        "?language=tr&rewaya=1";
 
-        const timingReadsUrl =
-        "https://mp3quran.net/api/v3/ayat_timing/reads";
+        const reciterCevap =
+        await fetch(reciterUrl,{cache:"no-store"});
 
-        const [reciterCevap, timingCevap] =
-        await Promise.all([
-            fetch(reciterUrl,{cache:"no-store"}),
-            fetch(timingReadsUrl,{cache:"no-store"})
-        ]);
-
-        if(!reciterCevap.ok || !timingCevap.ok)
+        if(!reciterCevap.ok)
             throw new Error("Okuyucu listesi alınamadı.");
 
         const reciterData =
         await reciterCevap.json();
-
-        const timingReads =
-        await timingCevap.json();
-
-        const zamanliIdler =
-        new Set(
-            (timingReads || [])
-            .map(x=>Number(x.id))
-            .filter(Number.isFinite)
-        );
 
         const liste=[];
 
@@ -2111,25 +2117,21 @@ async function okuyuculariYukle(){
 
             for(const moshaf of (reciter.moshaf || [])){
 
-                const readId =
-                Number(moshaf.id);
+                const readId = Number(moshaf.id);
+                if(!Number.isFinite(readId)) continue;
 
                 const sureler =
                 String(moshaf.surah_list || "")
                 .split(",")
-                .map(Number);
+                .map(Number)
+                .filter(Number.isFinite);
 
                 /*
-                 * Ayet vurgulaması için zamanlaması bulunan
-                 * ve seçili sûreyi içeren okuyuşları göster.
+                 * Listeyi mevcut sûreye göre daraltmıyoruz.
+                 * Böylece uygulama başka bir sayfada açıldığında
+                 * API yalnızca tek okuyucu döndürse bile menüde
+                 * daha önce bulunan okuyucular kaybolmaz.
                  */
-                if(
-                    !zamanliIdler.has(readId) ||
-                    !sureler.includes(SURE)
-                ){
-                    continue;
-                }
-
                 liste.push({
                     readId,
                     name:
@@ -2142,86 +2144,113 @@ async function okuyuculariYukle(){
             }
         }
 
-        /*
-         * Mevcut Abdulbasit kaydını ilk sıraya al.
-         */
-        liste.sort((a,b)=>{
-
-            if(a.readId===DEFAULT_READ_ID) return -1;
-            if(b.readId===DEFAULT_READ_ID) return 1;
-
-            return a.name.localeCompare(
-                b.name,
-                "tr"
-            );
-        });
-
-        /*
-         * Aynı read ID tekrar etmesin.
-         */
+        /* Aynı read ID tekrar etmesin. */
         const benzersiz=[];
         const gorulen=new Set();
 
         for(const x of liste){
-
-            if(gorulen.has(x.readId))
-                continue;
-
+            if(gorulen.has(x.readId)) continue;
             gorulen.add(x.readId);
             benzersiz.push(x);
         }
 
+        if(!benzersiz.length)
+            throw new Error("Okuyucu listesi boş geldi.");
+
+        /* Abdülbaset ilk sırada, diğerleri alfabetik. */
+        benzersiz.sort((a,b)=>{
+            if(a.readId===DEFAULT_READ_ID) return -1;
+            if(b.readId===DEFAULT_READ_ID) return 1;
+            return a.name.localeCompare(b.name,"tr");
+        });
+
         OKUYUCULAR=benzersiz;
+
+        /* Başarılı listeyi cihazda sakla. */
+        localStorage.setItem(
+            KAYIT_ANAHTARI,
+            JSON.stringify(OKUYUCULAR)
+        );
 
         okuyucuSec.innerHTML="";
 
-        if(!OKUYUCULAR.length){
-            throw new Error(
-                "Zamanlamalı okuyucu bulunamadı."
-            );
-        }
-
         for(const x of OKUYUCULAR){
-
-            const option =
-            document.createElement("option");
-
-            option.value =
-            String(x.readId);
-
-            option.textContent =
-            x.name;
-
+            const option=document.createElement("option");
+            option.value=String(x.readId);
+            option.textContent=x.name;
             okuyucuSec.appendChild(option);
         }
 
-        const kayitliReadId = Number(localStorage.getItem("kuranOkuyucuReadId"));
+        const kayitliReadId =
+        Number(localStorage.getItem("kuranOkuyucuReadId"));
+
         const varsayilan =
         OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
         OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
         OKUYUCULAR[0];
 
         OKUYUCU=varsayilan;
+        okuyucuSec.value=String(OKUYUCU.readId);
 
-        okuyucuSec.value =
-        String(OKUYUCU.readId);
+        durum.textContent = OKUYUCU.name + " hazır.";
 
     }catch(e){
 
-        console.error(
-            "Okuyucular yüklenemedi:",
-            e
-        );
+        console.error("Okuyucular yüklenemedi:",e);
 
         /*
-         * API listesi erişilemezse mevcut Abdulbasit
-         * ayarı çalışmaya devam etsin.
+         * MP3Quran geçici olarak cevap vermezse daha önce başarıyla
+         * alınmış okuyucu listesini kullan.
          */
-        okuyucuSec.innerHTML =
-        '<option value="5">AbdulBaset AbdulSamad</option>';
+        let kayitliListe=[];
 
+        try{
+            kayitliListe=JSON.parse(
+                localStorage.getItem(KAYIT_ANAHTARI) || "[]"
+            );
+        }catch(_){
+            kayitliListe=[];
+        }
+
+        kayitliListe=(Array.isArray(kayitliListe) ? kayitliListe : [])
+            .filter(x=>x && Number.isFinite(Number(x.readId)) && x.name && x.server)
+            .map(x=>({
+                readId:Number(x.readId),
+                name:String(x.name),
+                server:String(x.server)
+            }));
+
+        if(kayitliListe.length){
+
+            OKUYUCULAR=kayitliListe;
+            okuyucuSec.innerHTML="";
+
+            for(const x of OKUYUCULAR){
+                const option=document.createElement("option");
+                option.value=String(x.readId);
+                option.textContent=x.name;
+                okuyucuSec.appendChild(option);
+            }
+
+            const kayitliReadId =
+            Number(localStorage.getItem("kuranOkuyucuReadId"));
+
+            const varsayilan =
+            OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
+            OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
+            OKUYUCULAR[0];
+
+            OKUYUCU=varsayilan;
+            okuyucuSec.value=String(OKUYUCU.readId);
+            durum.textContent=OKUYUCU.name + " hazır.";
+            return;
+        }
+
+        /* İlk kurulumda hiç kayıt yoksa güvenli tek varsayılan. */
+        okuyucuSec.innerHTML=
+        '<option value="5">AbdulBaset AbdulSamad</option>';
         okuyucuSec.value="5";
-        localStorage.setItem("kuranOkuyucuReadId", "5");
+        localStorage.setItem("kuranOkuyucuReadId","5");
 
         OKUYUCU={
             readId:DEFAULT_READ_ID,
