@@ -846,10 +846,6 @@ body.gece-modu .favori-satir{background:#303630}
     cursor:pointer;
     z-index:5;
     font-size:0;
-    /* Bazı Android WebView sürümlerinde tamamen görünmez (opacity:0)
-       select native listeyi açmayabiliyor. Çok düşük opacity ile
-       select tıklanabilir kalır ve native seçenek penceresi açılır. */
-    opacity:.01;
 }
 
 .sure-kontrol #sureSec option,
@@ -890,16 +886,6 @@ body.gece-modu .favori-satir{background:#303630}
 #dilSec,
 #mealSec{
     overflow:hidden;
-}
-
-/* Android WebView / Chrome: kompakt seçim kutuları native listeyi açsın. */
-.okuyucu-kontrol.kompakt-secim #okuyucuSec,
-.sure-kontrol #sureSec,
-.dil-kontrol #dilSec,
-.meal-secim-kontrol #mealSec{
-    opacity:.01 !important;
-    pointer-events:auto !important;
-    -webkit-appearance:menulist !important;
 }
 
 /* Küçük ekranlarda da tek tek kompakt butonlar halinde kalırlar. */
@@ -2081,7 +2067,8 @@ function sayfaAraliginiAyarla(verses){
 
 async function okuyuculariYukle(){
 
-    const KAYIT_ANAHTARI = "kuranOkuyucularListesi";
+    const kayitAnahtari =
+    "kuranOkuyucuListesi_" + String(SURE);
 
     try{
 
@@ -2089,27 +2076,55 @@ async function okuyuculariYukle(){
         '<option value="">Okuyucular yükleniyor...</option>';
 
         /*
-         * ÖNEMLİ:
-         * Okuyucu listesini doldurmak için ayet_timing/reads API'sine
-         * artık bağımlı değiliz. Bu API cevap vermezse eskiden catch'e
-         * düşüyor ve menüde sadece Abdülbaset kalıyordu.
+         * BURADA ÖNCEKİ KODDAKİ HATA:
+         * API'nin ?sura=... cevabında bazı durumlarda moshaf.surah_list
+         * gelmediği için bütün okuyucular eleniyordu. Sonra catch bloğu
+         * eski kaydı kullanıyor ve ekranda sadece AbdulBaset kalıyordu.
          *
-         * Okuyucular, seçili sûreyi okuyabilen MP3Quran kayıtlarından
-         * doğrudan alınır. Ayet zamanlaması gerektiğinde oynatma sırasında
-         * ayrıca istenir.
+         * ?sura=SURE zaten sûre filtresini API tarafında yapıyor.
+         * Bu yüzden dönen moshafları ayrıca surah_list ile eleme.
          */
         const reciterUrl =
         "https://mp3quran.net/api/v3/reciters" +
-        "?language=tr&rewaya=1";
+        `?sura=${SURE}`;
 
-        const reciterCevap =
-        await fetch(reciterUrl,{cache:"no-store"});
+        const timingReadsUrl =
+        "https://mp3quran.net/api/v3/ayat_timing/reads";
+
+        const [reciterCevap, timingCevap] =
+        await Promise.all([
+            fetch(reciterUrl,{cache:"no-store"}),
+            fetch(timingReadsUrl,{cache:"no-store"})
+        ]);
 
         if(!reciterCevap.ok)
-            throw new Error("Okuyucu listesi alınamadı.");
+            throw new Error("Okuyucu API " + reciterCevap.status);
 
-        const reciterData =
-        await reciterCevap.json();
+        const reciterData = await reciterCevap.json();
+
+        let zamanliIdler = new Set();
+
+        if(timingCevap.ok){
+            try{
+                const timingData = await timingCevap.json();
+                const timingArray =
+                    Array.isArray(timingData)
+                    ? timingData
+                    : Array.isArray(timingData.reads)
+                        ? timingData.reads
+                        : Array.isArray(timingData.data)
+                            ? timingData.data
+                            : [];
+
+                zamanliIdler = new Set(
+                    timingArray
+                    .map(x=>Number(x.id ?? x.read_id ?? x.readId ?? x.moshaf_id))
+                    .filter(Number.isFinite)
+                );
+            }catch(e){
+                console.warn("Timing okuyucu listesi okunamadı:",e);
+            }
+        }
 
         const liste=[];
 
@@ -2118,1581 +2133,104 @@ async function okuyuculariYukle(){
             for(const moshaf of (reciter.moshaf || [])){
 
                 const readId = Number(moshaf.id);
-                if(!Number.isFinite(readId)) continue;
+                if(!Number.isFinite(readId) || !moshaf.server) continue;
 
-                const sureler =
-                String(moshaf.surah_list || "")
-                .split(",")
-                .map(Number)
-                .filter(Number.isFinite);
-
-                /*
-                 * Listeyi mevcut sûreye göre daraltmıyoruz.
-                 * Böylece uygulama başka bir sayfada açıldığında
-                 * API yalnızca tek okuyucu döndürse bile menüde
-                 * daha önce bulunan okuyucular kaybolmaz.
-                 */
                 liste.push({
                     readId,
                     name:
-                    reciter.name +
-                    " — " +
-                    (moshaf.name || "Murattal"),
-                    server:
-                    moshaf.server
+                        reciter.name +
+                        " — " +
+                        (moshaf.name || "Murattal"),
+                    server: moshaf.server,
+                    zamanlama: zamanliIdler.has(readId)
                 });
             }
         }
 
-        /* Aynı read ID tekrar etmesin. */
+        /*
+         * Öncelik zamanlaması bulunan okuyucularda.
+         * Timing listesi okunamadıysa okuyucuları yine kaybetme;
+         * böylece dropdown tek okuyucuya düşmez.
+         */
+        const zamanliListe =
+            zamanliIdler.size
+            ? liste.filter(x=>x.zamanlama)
+            : liste;
+
+        const kullanilacakListe =
+            zamanliListe.length
+            ? zamanliListe
+            : liste;
+
         const benzersiz=[];
         const gorulen=new Set();
 
-        for(const x of liste){
+        for(const x of kullanilacakListe){
             if(gorulen.has(x.readId)) continue;
             gorulen.add(x.readId);
             benzersiz.push(x);
         }
 
-        if(!benzersiz.length)
-            throw new Error("Okuyucu listesi boş geldi.");
-
-        /* Abdülbaset ilk sırada, diğerleri alfabetik. */
         benzersiz.sort((a,b)=>{
             if(a.readId===DEFAULT_READ_ID) return -1;
             if(b.readId===DEFAULT_READ_ID) return 1;
             return a.name.localeCompare(b.name,"tr");
         });
 
-        OKUYUCULAR=benzersiz;
+        if(!benzersiz.length)
+            throw new Error("API seçili sûre için okuyucu döndürmedi.");
 
-        /* Başarılı listeyi cihazda sakla. */
+        OKUYUCULAR=benzersiz;
         localStorage.setItem(
-            KAYIT_ANAHTARI,
+            kayitAnahtari,
             JSON.stringify(OKUYUCULAR)
         );
-
-        okuyucuSec.innerHTML="";
-
-        for(const x of OKUYUCULAR){
-            const option=document.createElement("option");
-            option.value=String(x.readId);
-            option.textContent=x.name;
-            okuyucuSec.appendChild(option);
-        }
-
-        const kayitliReadId =
-        Number(localStorage.getItem("kuranOkuyucuReadId"));
-
-        const varsayilan =
-        OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
-        OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
-        OKUYUCULAR[0];
-
-        OKUYUCU=varsayilan;
-        okuyucuSec.value=String(OKUYUCU.readId);
-
-        durum.textContent = OKUYUCU.name + " hazır.";
 
     }catch(e){
 
         console.error("Okuyucular yüklenemedi:",e);
 
-        /*
-         * MP3Quran geçici olarak cevap vermezse daha önce başarıyla
-         * alınmış okuyucu listesini kullan.
-         */
-        let kayitliListe=[];
-
+        let kayitliListe=null;
         try{
             kayitliListe=JSON.parse(
-                localStorage.getItem(KAYIT_ANAHTARI) || "[]"
+                localStorage.getItem(kayitAnahtari) || "null"
             );
-        }catch(_){
-            kayitliListe=[];
-        }
+        }catch(err){}
 
-        kayitliListe=(Array.isArray(kayitliListe) ? kayitliListe : [])
-            .filter(x=>x && Number.isFinite(Number(x.readId)) && x.name && x.server)
-            .map(x=>({
-                readId:Number(x.readId),
-                name:String(x.name),
-                server:String(x.server)
-            }));
-
-        if(kayitliListe.length){
-
+        if(Array.isArray(kayitliListe) && kayitliListe.length){
             OKUYUCULAR=kayitliListe;
-            okuyucuSec.innerHTML="";
-
-            for(const x of OKUYUCULAR){
-                const option=document.createElement("option");
-                option.value=String(x.readId);
-                option.textContent=x.name;
-                okuyucuSec.appendChild(option);
-            }
-
-            const kayitliReadId =
-            Number(localStorage.getItem("kuranOkuyucuReadId"));
-
-            const varsayilan =
-            OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
-            OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
-            OKUYUCULAR[0];
-
-            OKUYUCU=varsayilan;
-            okuyucuSec.value=String(OKUYUCU.readId);
-            durum.textContent=OKUYUCU.name + " hazır.";
-            return;
         }
 
-        /* İlk kurulumda hiç kayıt yoksa güvenli tek varsayılan. */
-        okuyucuSec.innerHTML=
-        '<option value="5">AbdulBaset AbdulSamad</option>';
-        okuyucuSec.value="5";
-        localStorage.setItem("kuranOkuyucuReadId","5");
-
-        OKUYUCU={
-            readId:DEFAULT_READ_ID,
-            name:"AbdulBaset AbdulSamad",
-            server:"https://server7.mp3quran.net/basit/"
-        };
+        if(!OKUYUCULAR.length){
+            OKUYUCULAR=[{
+                readId:DEFAULT_READ_ID,
+                name:"AbdulBaset AbdulSamad",
+                server:"https://server7.mp3quran.net/basit/",
+                zamanlama:true
+            }];
+        }
     }
 
+    okuyucuSec.innerHTML="";
+
+    for(const x of OKUYUCULAR){
+        const option=document.createElement("option");
+        option.value=String(x.readId);
+        option.textContent=x.name;
+        okuyucuSec.appendChild(option);
+    }
+
+    const kayitliReadId =
+        Number(localStorage.getItem("kuranOkuyucuReadId"));
+
+    const varsayilan =
+        OKUYUCULAR.find(x=>x.readId===kayitliReadId) ||
+        OKUYUCULAR.find(x=>x.readId===DEFAULT_READ_ID) ||
+        OKUYUCULAR[0];
+
+    OKUYUCU=varsayilan;
+    okuyucuSec.value=String(OKUYUCU.readId);
 }
-
-
-async function mealleriYukle(){
-    try{
-        const cevap = await fetch(
-            "https://api.quran.com/api/v4/resources/translations",
-            {cache:"no-store"}
-        );
-
-        if(!cevap.ok)
-            throw new Error("Meal listesi alınamadı.");
-
-        const data = await cevap.json();
-        const kaynaklar = (data.translations || []).map(x => ({
-            id:Number(x.id),
-            name:x.name || x.author_name || "Bilinmeyen meal",
-            author:x.author_name || x.name || "",
-            language:(x.language_name || "").toLowerCase()
-        })).filter(x => x.id);
-
-        MEALLER = kaynaklar.filter(x =>
-            !(x.language === "turkish" && CIKARILACAK_TURKCE_MEALLER.some(ad =>
-                (x.author || x.name).toLowerCase().includes(ad.toLowerCase())
-            ))
-        );
-
-        const diller = [...new Map(
-            MEALLER.map(x => [x.language, x.language])
-        ).values()].sort((a,b) => a.localeCompare(b,"tr"));
-
-        dilSec.innerHTML="";
-        for(const dil of diller){
-            const o=document.createElement("option");
-            o.value=dil;
-            o.textContent=dil === "turkish" ? "Türkçe" : dil.charAt(0).toUpperCase()+dil.slice(1);
-            dilSec.appendChild(o);
-        }
-
-        SECILI_DIL = diller.includes("turkish") ? "turkish" : diller[0];
-        dilSec.value=SECILI_DIL;
-        mealSecGuncelle();
-    }catch(e){
-        console.error("Mealler yüklenemedi:",e);
-        MEALLER=[
-            {id:52,name:"Elmalılı Hamdi Yazır",author:"Elmalili Hamdi Yazir",language:"turkish"},
-            {id:77,name:"Diyanet İşleri Başkanlığı",author:"Diyanet Isleri",language:"turkish"},
-            {id:112,name:"Şaban Britç",author:"Shaban Britch",language:"turkish"},
-            {id:124,name:"Muslim Shahin",author:"Muslim Shahin",language:"turkish"},
-            {id:210,name:"Dar Al-Salam Center",author:"Dar Al-Salam Center",language:"turkish"}
-        ];
-        SECILI_DIL="turkish";
-        dilSec.innerHTML='<option value="turkish">Türkçe</option>';
-        mealSecGuncelle();
-    }
-}
-
-function mealSecGuncelle(){
-    const liste=MEALLER.filter(x=>x.language===SECILI_DIL);
-    mealSec.innerHTML="";
-
-    for(const x of liste){
-        const o=document.createElement("option");
-        o.value=String(x.id);
-        o.textContent=mealGorunenAdi(x);
-        mealSec.appendChild(o);
-    }
-
-    if(!liste.length) return;
-
-    const uygun = liste.find(x=>x.id===SECILI_MEAL) || liste[0];
-    SECILI_MEAL=uygun.id;
-    mealSec.value=String(SECILI_MEAL);
-}
-
-
-
-/* =========================================================
-   EZBER MODU FONKSİYONLARI
-   ========================================================= */
-
-function ezberSureleriDoldur(){
-    ezberSure.innerHTML = "";
-    for(const s of SURELER){
-        const o = document.createElement("option");
-        o.value = String(s[0]);
-        o.textContent = s[2] ? `${s[0]}. ${s[2]} (${s[1]})` : `${s[0]}. ${s[1]}`;
-        ezberSure.appendChild(o);
-    }
-    ezberSure.value = String(SURE);
-    ezberAyetSinirlariniGuncelle();
-}
-
-async function ezberAyetSayisiniBul(sureNo){
-    try{
-        const cevap = await fetch(
-            `https://api.quran.com/api/v4/verses/by_chapter/${sureNo}?fields=verse_number&per_page=300`,
-            {cache:"no-store"}
-        );
-        if(!cevap.ok) throw new Error("Ayet sayısı alınamadı");
-        const data = await cevap.json();
-        return (data.verses || []).length || 1;
-    }catch(e){
-        console.error(e);
-        const tahmini = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,52,52,44,28,28,20,56,40,31,50,40,46,42,29,19,36,25,22,17,19,26,30,20,15,21,11,8,8,19,5,8,8,11,11,8,3,9,5,4,7,3,6,3,5,4,5,6,3,4,5,6,3,6];
-        return tahmini[sureNo-1] || 1;
-    }
-}
-
-async function ezberAyetSinirlariniGuncelle(){
-    const sayi = await ezberAyetSayisiniBul(Number(ezberSure.value));
-    ezberIlk.max = sayi;
-    ezberSon.max = sayi;
-    if(Number(ezberIlk.value) > sayi) ezberIlk.value = sayi;
-    if(Number(ezberSon.value) > sayi) ezberSon.value = sayi;
-    ezberSon.placeholder = String(sayi);
-}
-
-async function ezberBaslangicSayfasiniBul(sureNo, ayetNo){
-    try{
-        const cevap = await fetch(
-            `https://api.quran.com/api/v4/verses/by_chapter/${sureNo}?fields=verse_number,page_number,verse_key&per_page=300`,
-            {cache:"no-store"}
-        );
-        if(!cevap.ok) throw new Error("Ezber ayet sayfası alınamadı");
-        const data = await cevap.json();
-        const hedef = (data.verses || []).find(v => Number(v.verse_number) === Number(ayetNo));
-        const sayfaNo = Number(hedef && hedef.page_number);
-        if(!sayfaNo) throw new Error("Seçilen ayetin sayfası bulunamadı");
-        return sayfaNo;
-    }catch(e){
-        console.error(e);
-        throw e;
-    }
-}
-
-async function ezberZamanlariniYukle(){
-    const sureNo = Number(ezberSureNo);
-    const cevap = await fetch(
-        `https://mp3quran.net/api/v3/ayat_timing?surah=${sureNo}&read=${OKUYUCU.readId}`,
-        {cache:"no-store"}
-    );
-    if(!cevap.ok) throw new Error("Ezber zamanlaması alınamadı");
-
-    const data = await cevap.json();
-    ezberZamanlar = (data || []).map(x=>({
-        ayet:Number(x.ayah),
-        baslangic:Number(x.start_time)/1000,
-        bitis:Number(x.end_time)/1000
-    })).filter(x=>x.ayet >= ezberIlkAyet && x.ayet <= ezberSonAyet);
-
-    if(!ezberZamanlar.length)
-        throw new Error("Seçilen ayetler için zamanlama bulunamadı");
-}
-
-function ezberAudioOlustur(){
-    const sure = String(ezberSureNo).padStart(3,"0");
-    const okuyu = (typeof OKUYUCU !== "undefined" && OKUYUCU && OKUYUCU.server)
-        ? OKUYUCU.server
-        : "https://server7.mp3quran.net/basit/";
-    const url = okuyu.endsWith("/") ? `${okuyu}${sure}.mp3` : `${okuyu}/${sure}.mp3`;
-
-    if(ezberAudio && ezberAudio.src && ezberAudio.src.includes(`/${sure}.mp3`))
-        return;
-
-    if(ezberAudio){
-        ezberAudio.pause();
-        ezberAudio.src="";
-    }
-
-    ezberAudio = new Audio(url);
-    ezberAudio.preload="auto";
-}
-
-function ezberVurgula(ayetNo, sureNo=ezberSureNo){
-    document.querySelectorAll(".ayet.okunuyor,.meal-ayet.okunuyor")
-        .forEach(el=>el.classList.remove("okunuyor"));
-
-    document.querySelectorAll(`.ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"], .meal-ayet[data-sure="${sureNo}"][data-ayet="${ayetNo}"]`)
-        .forEach(el=>el.classList.add("okunuyor"));
-}
-
-function ezberTemizle(){
-    if(ezberTimer) clearTimeout(ezberTimer);
-    ezberTimer=null;
-    if(ezberAudio){
-        ezberAudio.pause();
-        ezberAudio.currentTime=0;
-    }
-    ezberVurguyuKaldir();
-}
-
-function ezberVurguyuKaldir(){
-    document.querySelectorAll(".ayet.okunuyor,.meal-ayet.okunuyor")
-        .forEach(el=>el.classList.remove("okunuyor"));
-}
-
-async function ezberAyetOynat(){
-    if(!ezberAktif || !ezberAudio) return;
-
-    const z = ezberZamanlar[ezberAyetIndex];
-    if(!z){
-        ezberTekrarNo++;
-        if(ezberTekrarNo > ezberTekrarHedef){
-            ezberAktif=false;
-            ezberDurdur.style.display="none";
-            ezberBaslat.style.display="";
-            ezberDurum.textContent=`Ezber tamamlandı — ${ezberTekrarHedef} tekrar yapıldı.`;
-            ezberTemizle();
-            return;
-        }
-        ezberAyetIndex=0;
-        return ezberAyetOynat();
-    }
-
-    ezberVurgula(z.ayet);
-    ezberDurum.textContent =
-        `${ezberSure.value ? ezberSure.options[ezberSure.selectedIndex].textContent : "Sûre"} — ` +
-        `${ezberIlkAyet}-${ezberSonAyet}. ayetler | ` +
-        `${ezberTekrarNo}/${ezberTekrarHedef}. tekrar | ${z.ayet}. ayet`;
-
-    try{
-        ezberAudio.currentTime = z.baslangic;
-        await ezberAudio.play();
-    }catch(e){
-        console.error(e);
-        ezberDurum.textContent="Ses başlatılamadı. Oynat düğmesine basıp tekrar deneyin.";
-        ezberAktif=false;
-        ezberDurdur.style.display="none";
-        ezberBaslat.style.display="";
-        return;
-    }
-
-    const sureMs = Math.max(250, (z.bitis-z.baslangic)*1000);
-    ezberTimer=setTimeout(()=>{
-        ezberAyetIndex++;
-        ezberAyetOynat();
-    }, sureMs);
-}
-
-async function ezberiBaslat(){
-    const sureNo=Number(ezberSure.value);
-    const ilk=Number(ezberIlk.value);
-    const son=Number(ezberSon.value);
-    const tekrar=Number(ezberTekrar.value);
-
-    if(!sureNo || !ilk || !son || !tekrar || ilk>son || tekrar<1){
-        ezberDurum.textContent="Lütfen sûre, geçerli ayet aralığı ve tekrar sayısını seç.";
-        return;
-    }
-
-    ezberAktif=false;
-    ezberTemizle();
-
-    ezberSureNo=sureNo;
-    ezberIlkAyet=ilk;
-    ezberSonAyet=son;
-    ezberTekrarHedef=Math.min(999,tekrar);
-    ezberTekrarNo=1;
-    ezberAyetIndex=0;
-
-    ezberBaslat.disabled=true;
-    ezberDurum.textContent="Ezber zamanlaması yükleniyor...";
-
-    try{
-        /* Ezber başlarken seçilen ilk ayetin bulunduğu gerçek sayfaya git.
-         * Böylece örn. 151. sûrenin 2-3. ayetleri seçildiğinde ekranda
-         * başka bir sayfa/sûre kalmaz; mushaf doğrudan hedef ayetin sayfasını açar. */
-        const hedefSayfa = await ezberBaslangicSayfasiniBul(sureNo, ilk);
-        SAYFA = hedefSayfa;
-        SURE = sureNo;
-        if(typeof sureSec !== "undefined" && sureSec)
-            sureSec.value = String(sureNo);
-        secilenSureyiKoru = true;
-        sayfaDegisti = true;
-        await mushafYukle();
-        try{ window.scrollTo({top:0, behavior:"smooth"}); }catch(e){}
-
-        await ezberZamanlariniYukle();
-        ezberAudioOlustur();
-
-        await new Promise((resolve,reject)=>{
-            if(ezberAudio.readyState >= 1) return resolve();
-            const ok=()=>{cleanup();resolve()};
-            const er=()=>{cleanup();reject(new Error("Ses yüklenemedi"))};
-            const cleanup=()=>{
-                ezberAudio.removeEventListener("loadedmetadata",ok);
-                ezberAudio.removeEventListener("error",er);
-            };
-            ezberAudio.addEventListener("loadedmetadata",ok);
-            ezberAudio.addEventListener("error",er);
-        });
-
-        if(!ezberZamanlar.length) throw new Error("Zamanlama bulunamadı");
-
-        ezberAktif=true;
-        ezberDurdur.style.display="inline-block";
-        ezberBaslat.style.display="none";
-        ezberBaslat.disabled=false;
-
-        // Seçilen sûreyi normal okuyucu alanında da göster.
-        if(typeof sureSec !== "undefined" && sureSec){
-            sureSec.value=String(sureNo);
-        }
-
-        ezberAyetOynat();
-    }catch(e){
-        console.error(e);
-        ezberBaslat.disabled=false;
-        ezberDurum.textContent="Ezber modu başlatılamadı. Seçilen okuyucunun bu sûre için zamanlaması olmayabilir.";
-    }
-}
-
-function ezberiDurdur(){
-    ezberAktif=false;
-    if(ezberTimer) clearTimeout(ezberTimer);
-    ezberTimer=null;
-    if(ezberAudio){
-        ezberAudio.pause();
-    }
-    ezberVurguyuKaldir();
-    ezberDurdur.style.display="none";
-    ezberBaslat.style.display="";
-    ezberBaslat.disabled=false;
-    ezberDurum.textContent="Ezber modu durduruldu.";
-}
-
-/* =========================================================
-   MUSHAFI YÜKLE
-   ========================================================= */
-
-async function mushafYukle(){
-
-    try{
-
-        durum.textContent =
-        "Mushaf yükleniyor...";
-
-
-        const url =
-        "https://api.quran.com/api/v4/verses/by_page/" + SAYFA +
-        "?words=true" +
-        "&translations=" + SECILI_MEAL +
-        "&word_fields=text_uthmani,page_number,line_number,location,verse_key" +
-        "&fields=text_uthmani,page_number,verse_number,verse_key,chapter_id" +
-        "&per_page=50";
-
-
-        const cevap =
-        await fetch(url,{cache:"no-store"});
-
-
-        if(!cevap.ok)
-            throw new Error(
-                "Mushaf API " + cevap.status
-            );
-
-
-        const data =
-        await cevap.json();
-
-        /*
-         * Sayfanın ayet aralığını tahmin etmiyoruz.
-         * Quran API'nin o sayfa için döndürdüğü gerçek
-         * ayetlerden otomatik olarak belirliyoruz.
-         */
-        const oncekiSure = SURE;
-
-        // Sûre menüsünden geldiysek ve hedef sayfada seçilen sûre gerçekten
-        // bulunuyorsa, sayfanın ilk ayeti başka bir sûreden başlasa bile
-        // SURE değerini seçilen sûrede tut. Örn. Müddessir 575. sayfada
-        // başlar; sayfanın ilk ayeti Müzzemmil 20 olabilir.
-        const secilenSureSayfadaVar = (data.verses || []).some(v => {
-            const ch = Number(
-                v.chapter_id ||
-                String(v.verse_key || '').split(':')[0]
-            );
-            return ch === SURE;
-        });
-
-        if(!(secilenSureyiKoru && secilenSureSayfadaVar)){
-            sureBilgisiniSayfadanBelirle(data.verses);
-        }
-        secilenSureyiKoru = false;
-
-        /* Yeni sayfa başka sûreyse eski sûrenin ses/zamanlamasını
-         * kesinlikle yeni sûrede kullanma. */
-        if(oncekiSure !== SURE){
-            if(audio){
-                try{ audio.pause(); }catch(e){}
-            }
-            audio = null;
-            audioSure = null;
-            tumZamanlar = [];
-            zamanlar = [];
-            aktifAyet = null;
-        }
-
-        sayfaAraliginiAyarla(data.verses);
-
-        sayfa.innerHTML="";
-        mealSayfa.innerHTML="";
-
-
-        const baslik =
-        document.createElement("div");
-
-        baslik.className="baslik";
-
-        const sureBilgi = SURELER.find(x => x[0] === SURE);
-        const sayfadakiSureler = [...new Set(SAYFA_AYETLERI.map(x => x.sure))];
-        const sayfadakiSureMetinleri = sayfadakiSureler
-            .map(no => SURELER.find(x => x[0] === no)?.[1])
-            .filter(Boolean);
-
-        // Üst bilgi başlıkları kaldırıldı.
-
-        const satirlar={};
-
-
-        for(const ayet of data.verses){
-
-            const ayetNo =
-            Number(ayet.verse_number);
-
-
-
-            for(const word of ayet.words || []){
-
-                const line =
-                Number(word.line_number);
-
-
-                if(!satirlar[line])
-                    satirlar[line]=[];
-
-
-                const ayetSure = Number(
-                    ayet.chapter_id ||
-                    String(ayet.verse_key || "").split(":")[0] ||
-                    SURE
-                );
-
-                satirlar[line].push({
-
-                    text:
-                    word.text_uthmani || "",
-
-                    ayet:
-                    ayetNo,
-
-                    sure:
-                    ayetSure
-
-                });
-
-            }
-
-        }
-
-
-        const satirNo =
-        Object.keys(satirlar)
-        .map(Number)
-        .sort((a,b)=>a-b);
-
-
-        let mushafSonSure = null;
-
-        for(const lineNo of satirNo){
-
-            const satir =
-            document.createElement("div");
-
-            satir.className =
-            "satir";
-
-
-            let aktifAyet=null;
-            let aktifSureAyetKey=null;
-
-            let aktifSpan=null;
-
-
-            for(const word of satirlar[lineNo]){
-
-                /* Sayfa içinde yeni sûre başlıyorsa, ilk ayetin hemen
-                 * üstüne ayrı bir sûre başlığı koy. */
-                if(word.sure !== mushafSonSure){
-                    const gecis = document.createElement("div");
-                    gecis.className = "sure-gecis-baslik";
-                    const sureGecisBilgi = SURELER.find(x => x[0] === word.sure);
-                    gecis.innerHTML = (sureGecisBilgi ? sureGecisBilgi[1] : "Sûre") +
-                        '<small>' + word.sure + ". Sûre" + '</small>';
-                    sayfa.appendChild(gecis);
-                    mushafSonSure = word.sure;
-                }
-
-                const sureAyetKey = word.sure + ":" + word.ayet;
-
-                if(sureAyetKey !== aktifSureAyetKey){
-
-                    aktifSureAyetKey = sureAyetKey;
-                    aktifAyet = word.ayet;
-
-
-                    aktifSpan =
-                    document.createElement("span");
-
-
-                    aktifSpan.className =
-                    "ayet";
-
-
-                    aktifSpan.dataset.ayet =
-                    word.ayet;
-
-                    aktifSpan.dataset.sure =
-                    word.sure;
-
-                    const favoriBtn=document.createElement("button");
-                    favoriBtn.className="ayet-favori";
-                    favoriBtn.dataset.ayet=word.ayet;
-                    favoriBtn.textContent=favoriMi(word.ayet) ? "★" : "☆";
-                    favoriBtn.title=favoriMi(word.ayet) ? "Favorilerden çıkar" : "Favorilere ekle";
-                    favoriBtn.addEventListener("click",ev=>{
-                        ev.stopPropagation();
-                        favoriyiDegistir(word.ayet);
-                    });
-                    satir.appendChild(favoriBtn);
-
-
-                    satir.appendChild(
-                        aktifSpan
-                    );
-
-                }
-
-
-                const kelime =
-                document.createElement("span");
-
-
-                kelime.className =
-                "kelime";
-
-
-                kelime.textContent =
-                word.text + " ";
-
-
-                aktifSpan.appendChild(
-                    kelime
-                );
-
-            }
-
-
-            sayfa.appendChild(satir);
-
-        }
-
-        /*
-         * Türkçe mealini aynı ayet numaralarıyla oluştur.
-         */
-        let mealSonSure = null;
-
-        for(const ayet of data.verses){
-
-            const ayetNo =
-            Number(ayet.verse_number);
-
-            const mealSure = Number(ayet.chapter_id || String(ayet.verse_key || "").split(":")[0] || SURE);
-
-            if(mealSure !== mealSonSure){
-                const mealGecis = document.createElement("div");
-                mealGecis.className = "meal-sure-gecis";
-                const mealSureBilgi = SURELER.find(x => x[0] === mealSure);
-                mealGecis.textContent = mealSureBilgi ? mealSureBilgi[1] + " Sûresi" : "Sûre";
-                mealSayfa.appendChild(mealGecis);
-                mealSonSure = mealSure;
-            }
-
-            const mealAyet =
-            document.createElement("div");
-
-            mealAyet.className="meal-ayet";
-            mealAyet.dataset.ayet=ayetNo;
-            mealAyet.dataset.sure=mealSure;
-
-            const mealNo =
-            document.createElement("span");
-
-            mealNo.className="meal-ayet-no";
-            mealNo.textContent=String(ayetNo);
-
-            const mealMetin =
-            document.createElement("span");
-
-            const ceviri =
-            ayet.translations &&
-            ayet.translations[0] &&
-            ayet.translations[0].text
-            ? ayet.translations[0].text
-            : "Meal bulunamadı.";
-
-            mealMetin.textContent =
-            ceviri.replace(/<[^>]*>/g,"").trim();
-
-            mealAyet.appendChild(mealNo);
-            mealAyet.appendChild(mealMetin);
-            mealSayfa.appendChild(mealAyet);
-        }
-
-        /*
-         * Kullanıcı doğrudan istediği ayete tıklayabilsin.
-         * Aynı ayet birden fazla satıra bölünmüşse bütün
-         * parçaları aynı ayete bağlanır.
-         */
-        sayfa
-        .querySelectorAll(".ayet")
-        .forEach(el=>{
-
-            el.addEventListener("click", async ()=>{
-                const ayetNo = Number(el.dataset.ayet);
-                const sureNo = Number(el.dataset.sure || SURE);
-                await ayeteGit(ayetNo, sureNo);
-            });
-
-        });
-
-        mealSayfa
-        .querySelectorAll(".meal-ayet")
-        .forEach(el=>{
-
-            el.addEventListener("click", async ()=>{
-                const ayetNo = Number(el.dataset.ayet);
-                const sureNo = Number(el.dataset.sure || SURE);
-                await ayeteGit(ayetNo, sureNo);
-            });
-
-        });
-
-
-        durum.textContent =
-        "Abdulbasit hazır";
-
-        if(tamSayfaModu){
-            requestAnimationFrame(tamSayfayiOlcekle);
-        }
-
-
-    }catch(e){
-
-        console.error(e);
-
-        durum.textContent =
-        "Mushaf yüklenemedi";
-
-    }
-
-}
-
-
-/* =========================================================
-   SESİ HAZIRLA
-   ========================================================= */
-
-function sesHazirla(hedefSure=SURE){
-
-    const hedefSureNo = Number(hedefSure);
-
-    const sesUrl =
-    OKUYUCU.server +
-    String(hedefSureNo).padStart(3,"0") +
-    ".mp3";
-
-    /*
-     * Aynı HTMLAudioElement'i kullanıyoruz.
-     * Yeni sûreye geçerken yeni Audio() oluşturmak yerine
-     * mevcut oynatıcıya yeni src veriyoruz. Böylece kullanıcı
-     * tarafından başlatılmış mevcut oynatma zinciri korunuyor.
-     */
-    if(!audio){
-
-        audio = new Audio();
-        audio.preload="auto";
-
-        audio.addEventListener(
-            "loadedmetadata",
-            ()=>{
-                console.log(
-                    "Abdulbasit ses süresi:",
-                    audio.duration
-                );
-            }
-        );
-
-        audio.addEventListener(
-            "ended",
-            async ()=>{
-                /* Ses dosyası gerçekten bittiyse bunun kesin olarak
-                   sûrenin sonu olduğunu kabul et. Aktif ayetin DOM
-                   üzerinde yakalanmış olmasına bağlı kalma. */
-                if(otomatikGecisYapiliyor) return;
-                if(!oynuyor) return;
-                await otomatikSonrakiAdimaGec(true);
-            }
-        );
-
-        audio.addEventListener(
-            "error",
-            e=>{
-                console.error("Ses hatası:", e);
-                durum.textContent =
-                OKUYUCU.name +
-                " sesi yüklenemedi.";
-            }
-        );
-    }
-
-    if(Number(audioSure) !== hedefSureNo || audio.src !== sesUrl){
-
-        audio.pause();
-        audio.src = sesUrl;
-        audioSure = hedefSureNo;
-
-        /*
-         * src dinamik değiştirildiğinde load() çağrısı yeni kaynağın
-         * seçilip yüklenmesini başlatır.
-         */
-        audio.load();
-    }
-}
-
-
-/* =========================================================
-   ABDULBASIT AYET ZAMANLARINI AL
-   ========================================================= */
-
-async function zamanlariYukle(){
-
-    try{
-
-        durum.textContent =
-        OKUYUCU.name +
-        " zamanlaması yükleniyor...";
-
-
-        const url =
-        `https://mp3quran.net/api/v3/ayat_timing?surah=${SURE}&read=${OKUYUCU.readId}`;
-
-
-        const cevap =
-        await fetch(
-            url,
-            {cache:"no-store"}
-        );
-
-
-        if(!cevap.ok){
-
-            throw new Error(
-                "Timing API " +
-                cevap.status
-            );
-
-        }
-
-
-        const data =
-        await cevap.json();
-
-
-        console.log(
-            "Abdulbasit timing:",
-            data
-        );
-
-
-        /*
-         * Zamanlamayı sadece mevcut sayfaya göre
-         * saklamıyoruz. Tüm sureyi bellekte tutuyoruz.
-         * Böylece 140 -> 141 -> 142 geçişlerinde
-         * yeni sayfanın ayetleri de bulunabiliyor.
-         */
-        tumZamanlar =
-        data
-        .map(x=>({
-
-            ayet:
-            Number(x.ayah),
-
-            baslangic:
-            Number(x.start_time)/1000,
-
-            bitis:
-            Number(x.end_time)/1000
-
-        }));
-
-        sayfaZamanlariniAyarla();
-
-
-        /*
-         * Bazı MP3Quran kayıtlarında
-         * ayet numarası 0'dan başlayabilir.
-         * Gerçek ayetler 1'den başlıyorsa
-         * doğrudan kullan.
-         */
-
-        if(!zamanlar.some(z=>z.ayet===ILK_AYET)){
-            console.warn(
-                "Bu sayfanın ilk ayeti için zamanlama bulunamadı:",
-                ILK_AYET
-            );
-        }
-
-
-        console.log(
-            "Kullanılan zamanlar:",
-            zamanlar
-        );
-
-
-        if(!zamanlar.length){
-
-            durum.textContent =
-            OKUYUCU.name +
-            " ayet zamanlaması bulunamadı.";
-
-            return false;
-
-        }
-
-
-        durum.textContent =
-        "Abdulbasit hazır";
-
-
-        return true;
-
-
-    }catch(e){
-
-        console.error(
-            "Zamanlama hatası:",
-            e
-        );
-
-
-        durum.textContent =
-        "Abdulbasit zamanlaması yüklenemedi.";
-
-
-        return false;
-
-    }
-
-}
-
-
-function sayfaZamanlariniAyarla(){
-    if(!tumZamanlar.length){
-        zamanlar = [];
-        return;
-    }
-
-    const sayfadakiAyetler = new Set(
-        SAYFA_AYETLERI
-            .filter(x => x.sure === Number(SURE))
-            .map(x => x.ayet)
-    );
-
-    zamanlar = tumZamanlar.filter(x => sayfadakiAyetler.has(x.ayet));
-}
-
-
-/* =========================================================
-   VURGUNU TEMİZLE
-   ========================================================= */
-
-function temizle(){
-
-    document
-    .querySelectorAll(
-        ".ayet.okunuyor, .meal-ayet.okunuyor"
-    )
-    .forEach(el=>{
-
-        el.classList.remove(
-            "okunuyor"
-        );
-
-    });
-
-
-    aktifAyet=null;
-
-}
-
-
-/* =========================================================
-   AYET TAKİBİ
-   ========================================================= */
-
-async function otomatikSonrakiAdimaGec(sesGercektenBitti=false){
-
-    if(otomatikGecisYapiliyor || !oynuyor) return;
-    otomatikGecisYapiliyor = true;
-
-    try{
-        const bitenSure = Number(audioSure || SURE);
-        const sonZamanAyet = tumZamanlar.length
-            ? Math.max(...tumZamanlar.map(z => Number(z.ayet) || 0))
-            : 0;
-        const bitenAyet = Number(aktifAyet || sonZamanAyet || 0);
-
-        /* Audio dosyası gerçekten sona erdiyse, bu sûre kesin olarak
-           tamamlanmıştır. Artık son ayetin zamanlamasının DOM'da yakalanıp
-           yakalanmadığına veya manuel bir sûre-sonu listesine güvenmiyoruz.
-           Böylece Âdiyât→Kâria gibi bazı geçişlerin çalışıp bazılarının
-           çalışmaması engellenir. */
-        const sureBitti = sesGercektenBitti ||
-            (sonZamanAyet > 0 && bitenAyet >= sonZamanAyet &&
-             zamanlar.length &&
-             audio.currentTime >= Number(zamanlar[zamanlar.length - 1].bitis));
-
-        if(sureBitti && bitenSure < 114){
-            const sonrakiSureNo = bitenSure + 1;
-            try{
-                const cevap = await fetch(
-                    `https://api.quran.com/api/v4/verses/by_chapter/${sonrakiSureNo}?fields=verse_number,page_number,verse_key&per_page=300`,
-                    {cache:"no-store"}
-                );
-                if(!cevap.ok) throw new Error("Sonraki sûrenin sayfası alınamadı");
-                const data = await cevap.json();
-                const ilkSureAyeti = (data.verses || []).find(v => Number(v.verse_number) === 1);
-                const hedefSayfa = Number(ilkSureAyeti && ilkSureAyeti.page_number);
-                if(!hedefSayfa) throw new Error("Sonraki sûrenin ilk sayfası bulunamadı");
-
-                if(timer) cancelAnimationFrame(timer);
-                if(audio) audio.pause();
-                temizle();
-                SURE = sonrakiSureNo;
-                if(sureSec) sureSec.value = String(SURE);
-                tumZamanlar = [];
-                zamanlar = [];
-                oynuyor = true;
-
-                if(SAYFA !== hedefSayfa){
-                    SAYFA = hedefSayfa;
-                    sayfaDegisti = true;
-                    await mushafYukle();
-                }else{
-                    sayfaDegisti = false;
-                }
-
-                await ayeteGit(1, sonrakiSureNo, true);
-                return;
-            }catch(e){
-                console.error("Sûre geçişi hatası:", e);
-                /* Normal ayet/sayfa geçişi aşağıda yedek olarak çalışır. */
-            }
-        }
-
-        const mevcutIndex = SAYFA_AYETLERI.findIndex(x =>
-            x.sure === bitenSure && x.ayet === bitenAyet
-        );
-        const sonrakiAyet = mevcutIndex >= 0
-            ? SAYFA_AYETLERI[mevcutIndex + 1]
-            : SAYFA_AYETLERI.find(x =>
-                Number(x.sure) > bitenSure ||
-                (Number(x.sure) === bitenSure && Number(x.ayet) > bitenAyet)
-              ) || null;
-
-        if(timer) cancelAnimationFrame(timer);
-        if(audio) audio.pause();
-        temizle();
-
-        if(sonrakiAyet){
-            const yeniSure = Number(sonrakiAyet.sure);
-            const yeniAyet = Number(sonrakiAyet.ayet);
-            SURE = yeniSure;
-            if(sureSec) sureSec.value = String(SURE);
-            if(yeniSure !== bitenSure){
-                /*
-                 * Audio nesnesini silmiyoruz. Aynı oynatıcı yeni sûreye
-                 * ayeteGit() içinde yeni src ile geçirilecek.
-                 */
-                tumZamanlar = [];
-                zamanlar = [];
-            }
-            sayfaDegisti = false;
-            oynuyor = true;
-            await ayeteGit(yeniAyet, yeniSure, true);
-            return;
-        }
-
-        if(SAYFA < MAX_SAYFA){
-            SAYFA++;
-            sayfaDegisti = true;
-            konumuKaydet();
-            await mushafYukle();
-            const ilk = SAYFA_AYETLERI[0];
-            if(ilk){
-                await ayeteGit(ilk.ayet, ilk.sure, true);
-            }
-            window.scrollTo({top:0, behavior:'smooth'});
-            return;
-        }
-
-        oynuyor = false;
-        durum.textContent = 'Hatim tamamlandı.';
-    }catch(e){
-        console.error('Otomatik devam hatası:', e);
-        oynuyor = false;
-        durum.textContent = 'Sonraki sayfaya geçilemedi.';
-    }finally{
-        otomatikGecisYapiliyor = false;
-    }
-}
-
-
-function takipEt(){
-
-    if(
-        !audio ||
-        !oynuyor
-    ){
-
-        return;
-
-    }
-
-
-    const saniye =
-    audio.currentTime;
-
-
-    let aktif=null;
-
-
-    for(const z of zamanlar){
-
-        if(
-            saniye >= z.baslangic &&
-            saniye < z.bitis
-        ){
-
-            aktif=z;
-
-            break;
-
-        }
-
-    }
-
-
-    if(aktif){
-
-        /*
-         * Aynı ayet tekrar tekrar DOM'dan
-         * aranmasın.
-         */
-
-        if(
-            aktifAyet !== aktif.ayet
-        ){
-
-            temizle();
-
-
-            const hedefler =
-            document.querySelectorAll(
-                `.ayet[data-sure="${SURE}"][data-ayet="${aktif.ayet}"]`
-            );
-
-
-            if(hedefler.length){
-
-                /*
-                 * Aynı ayet birden fazla satıra
-                 * bölünmüş olabilir.
-                 * Ayetin bütün satır parçalarını
-                 * birlikte sarıya boya.
-                 */
-
-                hedefler.forEach(hedef=>{
-                    hedef.classList.add("okunuyor");
-                });
-
-                const mealHedefler =
-                mealSayfa.querySelectorAll(
-                    `.meal-ayet[data-sure="${SURE}"][data-ayet="${aktif.ayet}"]`
-                );
-
-                mealHedefler.forEach(hedef=>{
-                    hedef.classList.add("okunuyor");
-                });
-
-
-                /*
-                 * Sayfayı sürekli oynatmasın.
-                 * Sadece yeni ayete geçildiğinde
-                 * ilk parçasını ortalasın.
-                 */
-
-                if(document.body.classList.contains("gorunum-meal") && mealHedefler.length){
-                    mealHedefler[0].scrollIntoView({
-                        behavior:"smooth",
-                        block:"center"
-                    });
-                }else{
-                    hedefler[0].scrollIntoView({
-                        behavior:"smooth",
-                        block:"center"
-                    });
-                }
-
-
-                durum.textContent =
-                `${OKUYUCU.name} — ${SURE}:${aktif.ayet} okunuyor...`;
-
-
-                aktifAyet =
-                aktif.ayet;
-
-                okumaKonumunuKaydet(SURE, aktif.ayet);
-
-            }
-
-        }
-
-    }
-
-
-    /*
-     * Bazı MP3 dosyalarında tarayıcı "ended" olayını zamanlamanın
-     * bittiği anda güvenilir biçimde vermeyebilir. Sayfadaki son ayetin
-     * zamanlaması bittiğinde geçişi burada da garanti ediyoruz.
-     */
-    if(oynuyor && zamanlar.length && !otomatikGecisYapiliyor){
-        const sonZaman = zamanlar[zamanlar.length - 1];
-        if(sonZaman &&
-           Number(aktifAyet || 0) === Number(sonZaman.ayet) &&
-           audio.currentTime >= Number(sonZaman.bitis)){
-            otomatikSonrakiAdimaGec();
-            return;
-        }
-    }
-
-    timer =
-    requestAnimationFrame(
-        takipEt
-    );
-
-}
-
-
-/* =========================================================
-   TIKLANAN AYETE GİT
-   ========================================================= */
-
-async function ayeteGit(ayetNo, sureNo=SURE, otomatikDevam=false){
-
-    try{
-
-        sureNo = Number(sureNo) || SURE;
-        const okumayaDevamEdiyordu = !!oynuyor || !!otomatikDevam;
-
-        /* Sayfada birden fazla sûre varsa tıklanan ayetin
-         * kendi sûresinin sesini ve zamanlamasını kullan. */
-        if(sureNo !== SURE){
-            if(audio) audio.pause();
-            if(!okumayaDevamEdiyordu) oynuyor=false;
-            if(timer) cancelAnimationFrame(timer);
-            temizle();
-            tumZamanlar=[];
-            zamanlar=[];
-            SURE=sureNo;
-            if(typeof sureSec !== "undefined" && sureSec)
-                sureSec.value=String(SURE);
-            sayfaDegisti=true;
-        }
-
-        /*
-         * Yeni sûreye geçişte mevcut Audio nesnesini koru;
-         * sadece src'yi yeni sûrenin dosyasına çevir.
-         */
-        sesHazirla(sureNo);
-
-        /* Zamanlamalar henüz alınmadıysa tüm sureyi al. */
-        if(!tumZamanlar.length){
-            const tamam = await zamanlariYukle();
-            if(!tamam)
-                return;
-        }
-
-        /* Sadece ekranda bulunan sayfanın zamanlarını kullan. */
-        sayfaZamanlariniAyarla();
-
-        const hedef = tumZamanlar.find(
-            z=>z.ayet===ayetNo
-        );
-
-        if(!hedef){
-            durum.textContent =
-            "Bu ayet için ses zamanlaması bulunamadı.";
-            return;
-        }
-
-        /*
-         * Ses metadata'sı henüz hazır değilse önce hazır olmasını bekle.
-         */
-        if(audio.readyState === 0){
-            await new Promise((resolve,reject)=>{
-                const tamam = ()=>{
-                    temizleDinleyiciler();
-                    resolve();
-                };
-                const hata = ()=>{
-                    temizleDinleyiciler();
-                    reject(new Error("Ses yüklenemedi."));
-                };
-                function temizleDinleyiciler(){
-                    audio.removeEventListener("loadedmetadata", tamam);
-                    audio.removeEventListener("error", hata);
-                }
-                audio.addEventListener("loadedmetadata", tamam, {once:true});
-                audio.addEventListener("error", hata, {once:true});
-            });
-        }
-
-        audio.currentTime = hedef.baslangic;
-        aktifAyet = null;
-        sayfaDegisti = false;
-        devamKonumuHazir = false;
-        okumaKonumunuKaydet(sureNo, ayetNo);
-
-        temizle();
-
-        try{
-            await audio.play();
-        }catch(playErr){
-            /*
-             * Yeni sûrenin kaynağı henüz oynatılabilir duruma gelmediyse
-             * canplay sonrasında aynı Audio nesnesiyle tekrar dene.
-             */
-            await new Promise((resolve,reject)=>{
-                let tamamlandi=false;
-
-                const temizlePlayDinleyicileri=()=>{
-                    audio.removeEventListener("canplay", canplay);
-                    audio.removeEventListener("error", hata);
-                };
-
-                const canplay=async()=>{
-                    if(tamamlandi) return;
-                    try{
-                        await audio.play();
-                        tamamlandi=true;
-                        temizlePlayDinleyicileri();
-                        resolve();
-                    }catch(e){
-                        tamamlandi=true;
-                        temizlePlayDinleyicileri();
-                        reject(e);
-                    }
-                };
-
-                const hata=()=>{
-                    if(tamamlandi) return;
-                    tamamlandi=true;
-                    temizlePlayDinleyicileri();
-                    reject(new Error("Ses kaynağı yüklenemedi."));
-                };
-
-                audio.addEventListener("canplay", canplay, {once:true});
-                audio.addEventListener("error", hata, {once:true});
-            });
-        }
-
-        oynuyor = true;
-
-        if(timer)
-            cancelAnimationFrame(timer);
-
-        takipEt();
-
-        durum.textContent =
-        `${OKUYUCU.name} — ${SURE}:${ayetNo} okunuyor...`;
-
-    }catch(e){
-
-        console.error("Ayet oynatma hatası:", e);
-        durum.textContent =
-        "Ayet başlatılamadı.";
-
-    }
-
-}
-
-
-/* =========================================================
-   OYNAT
-   ========================================================= */
-
-oynat.addEventListener(
-    "click",
-    async()=>{
-
-        try{
-
-            sesHazirla();
-
-
-            /*
-             * Zamanlama daha önce alınmadıysa
-             * şimdi al.
-             */
-
-            if(!zamanlar.length){
-
-                const tamam =
-                await zamanlariYukle();
-
-
-                if(!tamam)
-                    return;
-
-            }
-
-            /* Zamanlama yüklendikten sonra daima mevcut
-             * sayfanın ayetlerini kullan. */
-            sayfaZamanlariniAyarla();
-
-            /*
-             * Bulunduğumuz sayfanın ilk ayetinin
-             * ses başlangıcını bul.
-             */
-
-            const ilk =
-            zamanlar.find(
-                z=>z.ayet===ILK_AYET
-            );
-
-
-            /*
-             * Sayfa değiştiyse eski sayfanın kaldığı
-             * saniyeden devam etme. Yeni sayfanın
-             * ilk ayetinden başla.
-             */
-
-            if(
-                sayfaDegisti &&
-                ilk
-            ){
-
-                let baslangicAyet = ilk;
-
-                if(devamKonumuHazir){
-                    const kayitliSure = Number(localStorage.getItem("kuranSonSure"));
-                    const kayitliAyet = Number(localStorage.getItem("kuranSonAyet"));
-                    const kayitli = zamanlar.find(z =>
-                        z.ayet === kayitliAyet && kayitliSure === Number(SURE)
-                    );
-                    if(kayitli) baslangicAyet = kayitli;
-                }
-
-                audio.currentTime =
-                baslangicAyet.baslangic;
-
-                aktifAyet = null;
-                sayfaDegisti = false;
-                devamKonumuHazir = false;
-
-            }
-
-            /*
-             * Uygulama ilk kez açıldığında da
-             * ilk ayetten başla.
-             */
-
-            if(
-                audio.currentTime < 1 &&
-                ilk
-            ){
-
-                audio.currentTime =
-                ilk.baslangic;
-
-            }
-
-
-            // Oynat düğmesine basıldığı anda üst menüyü kapat.
-            // Menü düğmesi ekranda kalır ve istenirse tekrar açılabilir.
-            menuyuGizle();
-
-            await audio.play();
-
-            oynuyor=true;
-
-
-            if(timer)
-                cancelAnimationFrame(
-                    timer
-                );
-
-
-            takipEt();
-
-
-            durum.textContent =
-            OKUYUCU.name +
-            " okuyor...";
-
-
-        }catch(e){
-
-            console.error(
-                "Oynatma hatası:",
-                e
-            );
-
-
-            durum.textContent =
-            "Ses başlatılamadı.";
-
-        }
-
-    }
-);
-
 
 /* =========================================================
    DURAKLAT
@@ -3811,7 +2349,7 @@ okuyucuSec.addEventListener(
 
         durum.textContent =
         OKUYUCU.name +
-        " seçildi. Hazır.";
+        " seçildi. Oynat'a basınca zamanlaması yüklenecek.";
 
     }
 );
@@ -3842,9 +2380,10 @@ sureSec.addEventListener("change", async ()=>{
     konumuKaydet();
     durum.textContent=`${bilgi[1]} Sûresi yükleniyor...`;
 
-    // Okuyucu listesini yeni sûreye göre tazele.
-    await okuyuculariYukle();
+    // Önce mushafı yükle; böylece ortak başlangıç sayfalarında
+    // SURE kesinleşsin. Ardından okuyucu listesini doğru sûre için tazele.
     await mushafYukle();
+    await okuyuculariYukle();
 });
 
 /* Ezber modu aç/kapat */
@@ -4038,9 +2577,14 @@ geceModunuUygula();
 favorileriGoster();
 
 (async()=>{
-    await okuyuculariYukle();
+    /*
+     * Uygulama yeniden açıldığında önce kayıtlı sayfa/sûreyi yükle.
+     * Reader listesini bundan önce çağırmak SURE=1 iken listeyi çekip
+     * sonradan kaldığımız sûreye geçince yanlış/eksik liste bırakabiliyordu.
+     */
     await mealleriYukle();
     await mushafYukle();
+    await okuyuculariYukle();
 })();
 
 </script>
