@@ -1801,18 +1801,83 @@ const sayfaGitIptal = document.getElementById("sayfaGitIptal");
 const menuToggle = document.getElementById("menuToggle");
 const kontroller = document.querySelector(".kontroller");
 
+/* =========================================================
+   OTOMATİK ARAYÜZ DİLİ
+   Yalnızca menü/buton/arayüz metinlerini tarayıcı diline göre çevirir.
+   Kur'an metni, mealler, okuyucu isimleri ve uygulama mantığına dokunmaz.
+   ========================================================= */
+const UI_DIL = (()=>{
+    const lang = String((navigator.languages && navigator.languages[0]) || navigator.language || "tr").toLowerCase();
+    if(lang.startsWith("en")) return "en";
+    if(lang.startsWith("de")) return "de";
+    if(lang.startsWith("fr")) return "fr";
+    if(lang.startsWith("es")) return "es";
+    if(lang.startsWith("pt")) return "pt";
+    if(lang.startsWith("it")) return "it";
+    if(lang.startsWith("ar")) return "ar";
+    if(lang.startsWith("fa")) return "fa";
+    if(lang.startsWith("ru")) return "ru";
+    if(lang.startsWith("id")) return "id";
+    if(lang.startsWith("ur")) return "ur";
+    if(lang.startsWith("ms")) return "ms";
+    return "tr";
+})();
+
+const UI_METIN={
+tr:{menu:"☰ Menü",menuKapat:"✕ Menüyü Gizle",onceki:"◀ Önceki",sonraki:"Sonraki ▶",sure:"📖 Sûre",okuyucu:"🎙 Okuyucu",dil:"🌐 Dil",meal:"📖 Meal",gorunum:"👁 Görünüm",arapca:"📜 Sadece Arapça",sadeceMeal:"📝 Sadece Meal",tamSayfa:"📄 Tam Sayfa",takip:"↩ Takip Et",sayfayaGit:"🔢 Sayfaya Git",favoriler:"☆ Favoriler",gece:"🌙 Gece Modu",gunduz:"☀️ Gündüz Modu",ezber:"🧠 Ezber Modu",favoriAyetler:"⭐ Favori Ayetler",favoriyeEkle:"Favorilere ekle",favoridenCikar:"Favorilerden çıkar"},
+en:{menu:"☰ Menu",menuKapat:"✕ Hide Menu",onceki:"◀ Previous",sonraki:"Next ▶",sure:"📖 Surah",okuyucu:"🎙 Reader",dil:"🌐 Language",meal:"📖 Translation",gorunum:"👁 View",arapca:"📜 Arabic Only",sadeceMeal:"📝 Translation Only",tamSayfa:"📄 Full Page",takip:"↩ Follow",sayfayaGit:"🔢 Go to Page",favoriler:"☆ Favorites",gece:"🌙 Night Mode",gunduz:"☀️ Day Mode",ezber:"🧠 Memorization Mode",favoriAyetler:"⭐ Favorite Verses",favoriyeEkle:"Add to favorites",favoridenCikar:"Remove from favorites"},
+de:{menu:"☰ Menü",menuKapat:"✕ Menü ausblenden",onceki:"◀ Zurück",sonraki:"Weiter ▶",sure:"📖 Sure",okuyucu:"🎙 Rezitator",dil:"🌐 Sprache",meal:"📖 Übersetzung",gorunum:"👁 Ansicht",arapca:"📜 Nur Arabisch",sadeceMeal:"📝 Nur Übersetzung",tamSayfa:"📄 Vollbild",takip:"↩ Folgen",sayfayaGit:"🔢 Seite öffnen",favoriler:"☆ Favoriten",gece:"🌙 Nachtmodus",gunduz:"☀️ Tagesmodus",ezber:"🧠 Auswendiglernen",favoriAyetler:"⭐ Favorisierte Verse",favoriyeEkle:"Zu Favoriten hinzufügen",favoridenCikar:"Aus Favoriten entfernen"},
+fr:{menu:"☰ Menu",menuKapat:"✕ Masquer le menu",onceki:"◀ Précédent",sonraki:"Suivant ▶",sure:"📖 Sourate",okuyucu:"🎙 Récitateur",dil:"🌐 Langue",meal:"📖 Traduction",gorunum:"👁 Affichage",arapca:"📜 Arabe uniquement",sadeceMeal:"📝 Traduction uniquement",tamSayfa:"📄 Plein écran",takip:"↩ Suivre",sayfayaGit:"🔢 Aller à la page",favoriler:"☆ Favoris",gece:"🌙 Mode nuit",gunduz:"☀️ Mode jour",ezber:"🧠 Mémorisation",favoriAyetler:"⭐ Versets favoris",favoriyeEkle:"Ajouter aux favoris",favoridenCikar:"Retirer des favoris"},
+es:{menu:"☰ Menú",menuKapat:"✕ Ocultar menú",onceki:"◀ Anterior",sonraki:"Siguiente ▶",sure:"📖 Sura",okuyucu:"🎙 Recitador",dil:"🌐 Idioma",meal:"📖 Traducción",gorunum:"👁 Vista",arapca:"📜 Solo árabe",sadeceMeal:"📝 Solo traducción",tamSayfa:"📄 Pantalla completa",takip:"↩ Seguir",sayfayaGit:"🔢 Ir a la página",favoriler:"☆ Favoritos",gece:"🌙 Modo nocturno",gunduz:"☀️ Modo diurno",ezber:"🧠 Modo de memorización",favoriAyetler:"⭐ Versículos favoritos",favoriyeEkle:"Añadir a favoritos",favoridenCikar:"Quitar de favoritos"},
+pt:{menu:"☰ Menu",menuKapat:"✕ Ocultar menu",onceki:"◀ Anterior",sonraki:"Próximo ▶",sure:"📖 Surata",okuyucu:"🎙 Recitador",dil:"🌐 Idioma",meal:"📖 Tradução",gorunum:"👁 Visualização",arapca:"📜 Apenas árabe",sadeceMeal:"📝 Apenas tradução",tamSayfa:"📄 Tela cheia",takip:"↩ Seguir",sayfayaGit:"🔢 Ir para a página",favoriler:"☆ Favoritos",gece:"🌙 Modo noturno",gunduz:"☀️ Modo diurno",ezber:"🧠 Modo de memorização",favoriAyetler:"⭐ Versículos favoritos",favoriyeEkle:"Adicionar aos favoritos",favoridenCikar:"Remover dos favoritos"},
+it:{menu:"☰ Menu",menuKapat:"✕ Nascondi menu",onceki:"◀ Precedente",sonraki:"Successivo ▶",sure:"📖 Sura",okuyucu:"🎙 Recitatore",dil:"🌐 Lingua",meal:"📖 Traduzione",gorunum:"👁 Visualizzazione",arapca:"📜 Solo arabo",sadeceMeal:"📝 Solo traduzione",tamSayfa:"📄 Schermo intero",takip:"↩ Segui",sayfayaGit:"🔢 Vai alla pagina",favoriler:"☆ Preferiti",gece:"🌙 Modalità notte",gunduz:"☀️ Modalità giorno",ezber:"🧠 Modalità memorizzazione",favoriAyetler:"⭐ Versetti preferiti",favoriyeEkle:"Aggiungi ai preferiti",favoridenCikar:"Rimuovi dai preferiti"},
+ar:{menu:"☰ القائمة",menuKapat:"✕ إخفاء القائمة",onceki:"◀ السابق",sonraki:"التالي ▶",sure:"📖 السورة",okuyucu:"🎙 القارئ",dil:"🌐 اللغة",meal:"📖 الترجمة",gorunum:"👁 العرض",arapca:"📜 العربية فقط",sadeceMeal:"📝 الترجمة فقط",tamSayfa:"📄 ملء الصفحة",takip:"↩ متابعة",sayfayaGit:"🔢 الانتقال إلى الصفحة",favoriler:"☆ المفضلة",gece:"🌙 الوضع الليلي",gunduz:"☀️ الوضع النهاري",ezber:"🧠 وضع الحفظ",favoriAyetler:"⭐ الآيات المفضلة",favoriyeEkle:"إضافة إلى المفضلة",favoridenCikar:"إزالة من المفضلة"},
+fa:{menu:"☰ منو",menuKapat:"✕ بستن منو",onceki:"◀ قبلی",sonraki:"بعدی ▶",sure:"📖 سوره",okuyucu:"🎙 قاری",dil:"🌐 زبان",meal:"📖 ترجمه",gorunum:"👁 نمایش",arapca:"📜 فقط عربی",sadeceMeal:"📝 فقط ترجمه",tamSayfa:"📄 تمام صفحه",takip:"↩ دنبال کردن",sayfayaGit:"🔢 رفتن به صفحه",favoriler:"☆ علاقه‌مندی‌ها",gece:"🌙 حالت شب",gunduz:"☀️ حالت روز",ezber:"🧠 حالت حفظ",favoriAyetler:"⭐ آیات مورد علاقه",favoriyeEkle:"افزودن به علاقه‌مندی‌ها",favoridenCikar:"حذف از علاقه‌مندی‌ها"},
+ru:{menu:"☰ Меню",menuKapat:"✕ Скрыть меню",onceki:"◀ Назад",sonraki:"Далее ▶",sure:"📖 Сура",okuyucu:"🎙 Чтец",dil:"🌐 Язык",meal:"📖 Перевод",gorunum:"👁 Вид",arapca:"📜 Только арабский",sadeceMeal:"📝 Только перевод",tamSayfa:"📄 Полный экран",takip:"↩ Следить",sayfayaGit:"🔢 Перейти к странице",favoriler:"☆ Избранное",gece:"🌙 Ночной режим",gunduz:"☀️ Дневной режим",ezber:"🧠 Режим запоминания",favoriAyetler:"⭐ Избранные аяты",favoriyeEkle:"Добавить в избранное",favoridenCikar:"Удалить из избранного"},
+id:{menu:"☰ Menu",menuKapat:"✕ Sembunyikan Menu",onceki:"◀ Sebelumnya",sonraki:"Berikutnya ▶",sure:"📖 Surah",okuyucu:"🎙 Qari",dil:"🌐 Bahasa",meal:"📖 Terjemahan",gorunum:"👁 Tampilan",arapca:"📜 Hanya Arab",sadeceMeal:"📝 Hanya Terjemahan",tamSayfa:"📄 Layar Penuh",takip:"↩ Ikuti",sayfayaGit:"🔢 Ke Halaman",favoriler:"☆ Favorit",gece:"🌙 Mode Malam",gunduz:"☀️ Mode Siang",ezber:"🧠 Mode Hafalan",favoriAyetler:"⭐ Ayat Favorit",favoriyeEkle:"Tambahkan ke favorit",favoridenCikar:"Hapus dari favorit"},
+ur:{menu:"☰ مینو",menuKapat:"✕ مینو چھپائیں",onceki:"◀ پچھلا",sonraki:"اگلا ▶",sure:"📖 سورت",okuyucu:"🎙 قاری",dil:"🌐 زبان",meal:"📖 ترجمہ",gorunum:"👁 منظر",arapca:"📜 صرف عربی",sadeceMeal:"📝 صرف ترجمہ",tamSayfa:"📄 مکمل صفحہ",takip:"↩ فالو کریں",sayfayaGit:"🔢 صفحے پر جائیں",favoriler:"☆ پسندیدہ",gece:"🌙 نائٹ موڈ",gunduz:"☀️ ڈے موڈ",ezber:"🧠 حفظ موڈ",favoriAyetler:"⭐ پسندیدہ آیات",favoriyeEkle:"پسندیدہ میں شامل کریں",favoridenCikar:"پسندیدہ سے ہٹائیں"},
+ms:{menu:"☰ Menu",menuKapat:"✕ Sembunyikan Menu",onceki:"◀ Sebelumnya",sonraki:"Seterusnya ▶",sure:"📖 Surah",okuyucu:"🎙 Qari",dil:"🌐 Bahasa",meal:"📖 Terjemahan",gorunum:"👁 Paparan",arapca:"📜 Arab Sahaja",sadeceMeal:"📝 Terjemahan Sahaja",tamSayfa:"📄 Skrin Penuh",takip:"↩ Ikut",sayfayaGit:"🔢 Pergi ke Halaman",favoriler:"☆ Kegemaran",gece:"🌙 Mod Malam",gunduz:"☀️ Mod Siang",ezber:"🧠 Mod Hafalan",favoriAyetler:"⭐ Ayat Kegemaran",favoriyeEkle:"Tambah ke kegemaran",favoridenCikar:"Buang daripada kegemaran"}
+};
+
+function uiT(key){ return (UI_METIN[UI_DIL] && UI_METIN[UI_DIL][key]) || UI_METIN.tr[key] || key; }
+
+function arayuzDiliniUygula(){
+    if(menuToggle) menuToggle.textContent = kontroller && kontroller.classList.contains("menuler-gizli") ? uiT("menu") : uiT("menuKapat");
+    if(onceki) onceki.textContent=uiT("onceki");
+    if(sonraki) sonraki.textContent=uiT("sonraki");
+    document.querySelector(".sure-etiket")?.replaceChildren(document.createTextNode(uiT("sure")));
+    document.querySelector(".okuyucu-etiket")?.replaceChildren(document.createTextNode(uiT("okuyucu")));
+    document.querySelector(".dil-etiket")?.replaceChildren(document.createTextNode(uiT("dil")));
+    document.querySelector(".meal-etiket")?.replaceChildren(document.createTextNode(uiT("meal")));
+    if(gorunumBtn) gorunumBtn.textContent=uiT("gorunum");
+    document.querySelector('[data-gorunum="arapca"]')?.replaceChildren(document.createTextNode(uiT("arapca")));
+    document.querySelector('[data-gorunum="meal"]')?.replaceChildren(document.createTextNode(uiT("sadeceMeal")));
+    if(tamSayfaBtn) tamSayfaBtn.textContent=tamSayfaModu ? uiT("takip") : uiT("tamSayfa");
+    if(sayfayaGit) sayfayaGit.textContent=uiT("sayfayaGit");
+    if(favorilerBtn) favorilerBtn.textContent=uiT("favoriler");
+    if(geceModuBtn) geceModuBtn.textContent=document.body.classList.contains("gece-modu") ? uiT("gunduz") : uiT("gece");
+    if(ezberToggle){
+        const ok=ezberToggle.querySelector("#ezberOk");
+        ezberToggle.textContent="";
+        ezberToggle.append(document.createTextNode(uiT("ezber")+" "));
+        if(ok) ezberToggle.append(ok);
+    }
+    const favBaslik=document.querySelector("#favorilerPanel h3");
+    if(favBaslik) favBaslik.textContent=uiT("favoriAyetler");
+}
+
 function menuyuGizle(){
     if(!kontroller || !menuToggle) return;
     kontroller.classList.add("menuler-gizli");
     menuToggle.setAttribute("aria-expanded", "false");
-    menuToggle.textContent = "☰ Menü";
+    menuToggle.textContent = uiT("menu");
 }
 
 function menuyuAcKapat(){
     if(!kontroller || !menuToggle) return;
     const gizli = kontroller.classList.toggle("menuler-gizli");
     menuToggle.setAttribute("aria-expanded", String(!gizli));
-    menuToggle.textContent = gizli ? "☰ Menü" : "✕ Menüyü Gizle";
+    menuToggle.textContent = gizli ? uiT("menu") : uiT("menuKapat");
 }
 
 let menuTouchHandled = false;
@@ -1870,7 +1935,7 @@ function mushafFavorileriniGuncelle(){
         /* Favori düğmesinde yıldız yerine doğrudan ayet numarasını göster. */
         btn.textContent=String(btn.dataset.ayet || "");
         btn.classList.toggle("aktif",aktif);
-        btn.title=aktif ? "Favorilerden çıkar" : "Favorilere ekle";
+        btn.title=aktif ? uiT("favoridenCikar") : uiT("favoriyeEkle");
     });
 }
 
@@ -1910,8 +1975,8 @@ function tamSayfayiUygula(kaydet=true){
     if(tamSayfaBtn){
         tamSayfaBtn.classList.toggle("tam-aktif", tamSayfaModu);
         tamSayfaBtn.textContent = tamSayfaModu
-            ? "↩ Takip Et"
-            : "📄 Tam Sayfa";
+            ? uiT("takip")
+            : uiT("tamSayfa");
     }
 
     tamSayfayiOlcekle();
@@ -2019,7 +2084,7 @@ function gorunumuUygula(gorunum, kaydet=true){
 function geceModunuUygula(){
     const acik=localStorage.getItem("kuranGeceModu")==="1";
     document.body.classList.toggle("gece-modu",acik);
-    geceModuBtn.textContent=acik ? "☀️ Gündüz Modu" : "🌙 Gece Modu";
+    geceModuBtn.textContent=acik ? uiT("gunduz") : uiT("gece");
 }
 
 let devamKonumuHazir = false;
@@ -3091,7 +3156,7 @@ async function mushafYukle(){
                         favoriBtn.dataset.ayet = word.ayet;
                         favoriBtn.dataset.sure = word.sure;
                         favoriBtn.textContent = String(word.ayet);
-                        favoriBtn.title = favoriMi(word.ayet, word.sure) ? "Favorilerden çıkar" : "Favorilere ekle";
+                        favoriBtn.title = favoriMi(word.ayet, word.sure) ? uiT("favoridenCikar") : uiT("favoriyeEkle");
                         favoriBtn.addEventListener("click", ev=>{
                             ev.preventDefault();
                             ev.stopPropagation();
@@ -4229,7 +4294,7 @@ favorilerBtn.addEventListener("click",()=>{
             if(kontroller) kontroller.classList.add("menuler-gizli");
             if(menuToggle){
                 menuToggle.setAttribute("aria-expanded","false");
-                menuToggle.textContent="☰ Menü";
+                menuToggle.textContent=uiT("menu");
             }
             requestAnimationFrame(()=>favorilerPanel.scrollIntoView({behavior:"smooth",block:"start"}));
         }
@@ -4341,6 +4406,7 @@ sonraki.addEventListener("click", async ()=>{
    BAŞLAT
    ========================================================= */
 
+arayuzDiliniUygula();
 varsayilanSayfayiYukle();
 sureSeciminiDoldur();
 sureSec.value = String(SURE);
