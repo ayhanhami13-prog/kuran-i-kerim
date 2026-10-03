@@ -439,7 +439,7 @@ body.gorunum-meal #sayfa{
     direction:ltr;
     text-align:left;
     font-family:Arial,sans-serif;
-    font-size:19px;
+    font-size:calc(19px * var(--takip-zoom));
     line-height:1.75;
     padding:14px 16px;
     margin:0 0 10px;
@@ -547,7 +547,7 @@ body.gorunum-meal #sayfa{
     direction:rtl;
     text-align:center;
     font-family:"UthmanicHafs","Times New Roman",serif;
-    font-size:31px;
+    font-size:calc(31px * var(--takip-zoom));
     line-height:2.2;
     min-height:65px;
 }
@@ -687,6 +687,37 @@ body.gorunum-meal #sayfa{
 .sayfa-git-butonlar button{flex:1}
 #sayfaGitTamam{background:linear-gradient(135deg,#197447,#2b9a61)}
 #sayfaGitIptal{background:linear-gradient(135deg,#777,#999)}
+
+/* TAKİP MODU: zor gören kullanıcılar için sayfa yazı boyutu */
+body{--takip-zoom:1;}
+.takip-zoom-kontrol{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:3px;
+    background:#eef5f0;
+    border:1px solid #cbdcd1;
+    border-radius:12px;
+}
+.takip-zoom-kontrol.acik{display:flex;}
+.takip-zoom-kontrol button{
+    min-width:36px;
+    height:34px;
+    padding:0 8px;
+    border:0;
+    border-radius:8px;
+    background:#2f7657;
+    color:#fff;
+    font-size:18px;
+    font-weight:900;
+    cursor:pointer;
+}
+.takip-zoom-kontrol #takipZoomSifirla{
+    min-width:54px;
+    font-size:12px;
+}
+body.gece-modu .takip-zoom-kontrol{background:#28322e;border-color:#43534b;}
+body.gece-modu .takip-zoom-kontrol button{background:#3d6957;color:#fff;}
 
 .mobil-kontrol-bar{display:none}
 
@@ -836,12 +867,12 @@ body.gece-modu .meal-ayet.okunuyor .meal-ayet-no{
     }
 
     .satir{
-        font-size:23px;
+        font-size:calc(23px * var(--takip-zoom));
         line-height:2.25;
     }
 
     .meal-ayet{
-        font-size:17px;
+        font-size:calc(17px * var(--takip-zoom));
         line-height:1.7;
     }
 }
@@ -1526,6 +1557,11 @@ body.tam-sayfa-modu .sayfalar .sayfa.tam-sayfa-olcekli{
         <button id="sayfayaGit">🔢 Sayfaya Git</button>
         <button id="favorilerBtn">☆ Favoriler</button>
         <button id="geceModuBtn">🌙 Gece Modu</button>
+        <div class="takip-zoom-kontrol" id="takipZoomKontrol" aria-label="Takip modu yazı boyutu">
+            <button type="button" id="takipZoomAzalt" title="Küçült">−</button>
+            <button type="button" id="takipZoomSifirla" title="Normal boyut">100%</button>
+            <button type="button" id="takipZoomArtir" title="Büyüt">+</button>
+        </div>
 
 
     </div>
@@ -2713,7 +2749,10 @@ function ezberAudioOlustur(){
         : "https://server7.mp3quran.net/basit/";
     const url = okuyu.endsWith("/") ? `${okuyu}${sure}.mp3` : `${okuyu}/${sure}.mp3`;
 
-    if(ezberAudio && ezberAudio.src && ezberAudio.src.includes(`/${sure}.mp3`))
+    /* Aynı sûre dosya adı farklı okuyucularda da aynı olduğu için
+       sadece /001.mp3 gibi dosya adına bakmak yeterli değildir.
+       Tam URL farklıysa mutlaka yeni okuyucunun sesini oluştur. */
+    if(ezberAudio && ezberAudio.src && ezberAudio.src === url)
         return;
 
     if(ezberAudio){
@@ -3698,6 +3737,8 @@ async function otomatikSonrakiAdimaGec(sesGercektenBitti=false){
 
 function takipEt(){
 
+    takipZoomGorunurlugunuAyarla();
+
     if(
         !audio ||
         !oynuyor
@@ -3785,24 +3826,21 @@ function takipEt(){
                         behavior:"smooth",
                         block:"center"
                     });
-                }else{
+                }else if(hedefler.length){
                     hedefler[0].scrollIntoView({
                         behavior:"smooth",
                         block:"center"
                     });
                 }
 
-
-                durum.textContent =
-                `${OKUYUCU.name} — ${SURE}:${aktif.ayet} okunuyor...`;
-
-
-                aktifAyet =
-                aktif.ayet;
-
-                okumaKonumunuKaydet(SURE, aktif.ayet);
-
             }
+
+            /* DOM görünümü ne olursa olsun son okunan ayeti kaydet. */
+            durum.textContent =
+            `${OKUYUCU.name} — ${SURE}:${aktif.ayet} okunuyor...`;
+
+            aktifAyet = aktif.ayet;
+            okumaKonumunuKaydet(SURE, aktif.ayet);
 
         }
 
@@ -4123,6 +4161,7 @@ duraklat.addEventListener(
 
 
         oynuyor=false;
+        takipZoomGorunurlugunuAyarla();
 
 
         if(timer)
@@ -4166,6 +4205,7 @@ durdur.addEventListener(
 
 
         oynuyor=false;
+        takipZoomGorunurlugunuAyarla();
 
 
         if(timer)
@@ -4203,6 +4243,17 @@ okuyucuSec.addEventListener(
         if(!secilen)
             return;
 
+        /* Ezber aktifken de seçilen yeni okuyucuyu gerçekten uygula.
+           Ezber sesi normal audio'dan ayrı olduğu için sadece OKUYUCU
+           değişkenini değiştirmek yetmez; ezber sesini yeni okuyucuyla
+           yeniden oluşturmak gerekir. */
+        const ezberDevamEdiyordu = Boolean(ezberAktif);
+
+        /* Okuyucu değişse bile kaldığımız ayeti kaybetme. */
+        if(Number.isFinite(Number(aktifAyet))){
+            okumaKonumunuKaydet(SURE, Number(aktifAyet));
+        }
+
         if(audio)
             audio.pause();
 
@@ -4221,6 +4272,17 @@ okuyucuSec.addEventListener(
 
         OKUYUCU=secilen;
         localStorage.setItem("kuranOkuyucuReadId", String(OKUYUCU.readId));
+
+        /* Ezber modu açıksa yeni okuyucuyla ezberi yeniden başlat. */
+        if(ezberDevamEdiyordu){
+            ezberAktif=false;
+            ezberTemizle();
+            ezberBaslat.disabled=false;
+            ezberDurdur.style.display="none";
+            ezberBaslat.style.display="";
+            await ezberiBaslat();
+            return;
+        }
 
         durum.textContent =
         OKUYUCU.name +
@@ -4389,6 +4451,46 @@ document.addEventListener("click", e=>{
 gorunumuUygula(localStorage.getItem("kuranGorunum") || "ikili", false);
 tamSayfayiUygula(false);
 
+
+/* =========================================================
+   TAKİP MODU YAZI BOYUTU
+   ========================================================= */
+const takipZoomKontrol = document.getElementById("takipZoomKontrol");
+const takipZoomAzalt = document.getElementById("takipZoomAzalt");
+const takipZoomSifirla = document.getElementById("takipZoomSifirla");
+const takipZoomArtir = document.getElementById("takipZoomArtir");
+
+let takipZoom = Number(localStorage.getItem("kuranTakipZoom") || "1");
+if(!Number.isFinite(takipZoom)) takipZoom=1;
+takipZoom=Math.min(1.8, Math.max(.8, takipZoom));
+
+function takipZoomUygula(){
+    document.body.style.setProperty("--takip-zoom", String(takipZoom));
+    takipZoomSifirla.textContent = `${Math.round(takipZoom*100)}%`;
+    localStorage.setItem("kuranTakipZoom", String(takipZoom));
+}
+
+function takipZoomGorunurlugunuAyarla(){
+    if(!takipZoomKontrol) return;
+    takipZoomKontrol.classList.add("acik");
+}
+
+takipZoomAzalt.addEventListener("click", ()=>{
+    takipZoom=Math.max(.8, Math.round((takipZoom-.1)*10)/10);
+    takipZoomUygula();
+});
+
+takipZoomArtir.addEventListener("click", ()=>{
+    takipZoom=Math.min(1.8, Math.round((takipZoom+.1)*10)/10);
+    takipZoomUygula();
+});
+
+takipZoomSifirla.addEventListener("click", ()=>{
+    takipZoom=1;
+    takipZoomUygula();
+});
+
+takipZoomUygula();
 
 document.querySelectorAll(".mobil-kontrol-bar [data-action]").forEach(btn=>{
     btn.addEventListener("click",()=>{
